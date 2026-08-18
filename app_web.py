@@ -4,9 +4,14 @@ from datetime import datetime
 import pandas as pd
 import json
 
-# --- CONFIGURACIÓN DE SUPABASE ---
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+# --- CONFIGURACIÓN DE SUPABASE (CON RESPALDO PARA VS CODE) ---
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except Exception:
+    # Respaldo de seguridad por si falla la lectura en local
+    SUPABASE_URL = "https://gxnoakudoorcsnqcklm.supabase.co"
+    SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd"
 
 @st.cache_resource
 def init_supabase():
@@ -27,7 +32,7 @@ with st.sidebar:
         st.write("🏭 **Fábrica Taira**")
         st.success(f"👷 Operario activo:\n**{st.session_state.usuario_actual}**")
         st.divider()
-        if st.button("Cerrar Sesión", width="stretch"):
+        if st.button("Cerrar Sesión", use_container_width=True):
             supabase.auth.sign_out()
             st.session_state.autenticado = False
             st.session_state.usuario_actual = ""
@@ -41,7 +46,7 @@ if not st.session_state.autenticado:
     usuario_input = st.text_input("Correo electrónico")
     clave_input = st.text_input("Contraseña", type="password")
     
-    if st.button("Ingresar", width="stretch"):
+    if st.button("Ingresar", use_container_width=True):
         if usuario_input and clave_input:
             try:
                 auth_res = supabase.auth.sign_in_with_password({"email": usuario_input, "password": clave_input})
@@ -109,7 +114,7 @@ else:
                             st.write(f"**{t.get('producto')}** (x{t.get('cantidad')})")
                             st.caption(f"📝 Solicitado por: {t.get('creado_por', 'N/A')} ({t.get('fecha_creacion', '')})")
                             
-                            if st.button(f"🚀 Iniciar Producción", key=f"ini_{t['id']}", width="stretch"):
+                            if st.button(f"🚀 Iniciar Producción", key=f"ini_{t['id']}", use_container_width=True):
                                 ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
                                 supabase.table("pedidos_produccion").update({
                                     "estado": "En Producción",
@@ -126,7 +131,7 @@ else:
                             st.write(f"**{t.get('producto')}** (x{t.get('cantidad')})")
                             st.caption(f"⚙️ Fabricando: {t.get('producido_por', 'N/A')} desde {t.get('fecha_produccion', '')}")
                             
-                            if st.button(f"✅ Finalizar (Integrar Stock)", key=f"fin_{t['id']}", width="stretch"):
+                            if st.button(f"✅ Finalizar (Integrar Stock)", key=f"fin_{t['id']}", use_container_width=True):
                                 prod_nombre = t.get('producto')
                                 cant_producida = float(t.get('cantidad', 0))
                                 
@@ -196,7 +201,7 @@ else:
                             st.write(f"**{t.get('producto')}** (x{t.get('cantidad')})")
                             st.caption(f"Terminado el: {t.get('fecha_finalizacion', '')}")
                             # EN LUGAR DE BORRAR, CAMBIAMOS EL ESTADO A 'Archivado' PARA QUE QUEDE EN LA BASE DE DATOS
-                            if st.button(f"📥 Archivar al Historial", key=f"arch_{t['id']}", width="stretch"):
+                            if st.button(f"📥 Archivar al Historial", key=f"arch_{t['id']}", use_container_width=True):
                                 supabase.table("pedidos_produccion").update({"estado": "Archivado"}).eq("id", t['id']).execute()
                                 st.success("Tarea enviada al historial permanente.")
                                 st.rerun()
@@ -211,7 +216,7 @@ else:
             tareas_reg = supabase.table("pedidos_produccion").select("*").execute().data or []
             if tareas_reg:
                 df_tareas = pd.DataFrame(tareas_reg)
-                st.dataframe(df_tareas, width="stretch")
+                st.dataframe(df_tareas, use_container_width=True)
                 
                 csv_tareas = df_tareas.to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -261,7 +266,7 @@ else:
             res = supabase.table("materias_primas").select("*").execute()
             if res.data:
                 df_mp = pd.DataFrame(res.data)
-                st.dataframe(df_mp, width="stretch")
+                st.dataframe(df_mp, use_container_width=True)
                 
                 csv_mp = df_mp.to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -364,7 +369,7 @@ else:
             res_p = supabase.table("productos").select("*").execute()
             if res_p.data:
                 df_productos = pd.DataFrame(res_p.data)
-                st.dataframe(df_productos[['nombre', 'cantidad', 'minimo', 'receta']], width="stretch")
+                st.dataframe(df_productos[['nombre', 'cantidad', 'minimo', 'receta']], use_container_width=True)
                 
                 csv_prod = df_productos.to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -486,7 +491,7 @@ else:
         st.info("El formato debe ser exacto por línea: **Nombre, Cantidad, Minimo**")
         data_input = st.text_area("Pega tu lista aquí:", height=200, placeholder="Ejemplo:\nCinta Negra, 50, 5\nHerraje Tipo A, 20, 5")
         
-        if st.button("Procesar Lista", width="stretch"):
+        if st.button("Procesar Lista", use_container_width=True):
             if data_input:
                 lineas = data_input.strip().split('\n')
                 errores = 0
@@ -556,7 +561,7 @@ else:
 
         with col_graf2:
             st.subheader("🏭 Productos Más Fabricados")
-            try:
+            try:M
                 tareas_data = supabase.table("pedidos_produccion").select("*").eq("estado", "Finalizado").execute().data
                 if tareas_data:
                     df_tareas = pd.DataFrame(tareas_data)
