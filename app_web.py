@@ -10,7 +10,6 @@ SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Cambio 5: Configuración de página optimizada para móviles y escritorio
 st.set_page_config(
     page_title="FÁBRICA TAIRA", 
     layout="wide",
@@ -22,6 +21,8 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 if "receta_temp" not in st.session_state:
     st.session_state.receta_temp = []
+if "categorias_colores" not in st.session_state:
+    st.session_state.categorias_colores = {}
 
 # --- FUNCIÓN DE AUDITORÍA ---
 def registrar_movimiento(usuario, accion, detalle):
@@ -36,7 +37,19 @@ def registrar_movimiento(usuario, accion, detalle):
     except Exception as e:
         pass
 
-# Cambio 1: Función de notificaciones flotantes (toast) para stock bajo
+# --- VALIDACIÓN DE ADMINISTRADOR ---
+def es_administrador():
+    return st.session_state.get("email_user", "").strip().lower() == "mininpared@gmail.com"
+
+# --- GENERADOR DE COLOR AUTOMÁTICO PARA CATEGORÍAS ---
+def obtener_color_categoria(categoria):
+    if categoria not in st.session_state.categorias_colores:
+        # Colores pasteles amigables aleatorios
+        colores = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC3", "#BAE1FF", "#E8BAFF", "#FFBABE"]
+        st.session_state.categorias_colores[categoria] = random.choice(colores)
+    return st.session_state.categorias_colores[categoria]
+
+# --- NOTIFICACIONES FLOTANTES (TOAST) ---
 def verificar_alertas_flotantes(lista_mp, lista_productos):
     for mp in lista_mp:
         cant_actual = float(mp.get('cantidad') or mp.get('longitud') or 0)
@@ -60,7 +73,7 @@ if not st.session_state.autenticado:
             supabase.auth.sign_in_with_password({"email": email, "password": password})
             st.session_state.autenticado = True
             st.session_state.user = email.split('@')[0].capitalize()
-            st.session_state.email_user = email.strip().lower() # Guardamos el mail para validar permisos
+            st.session_state.email_user = email.strip().lower()
             st.rerun()
         except Exception as e:
             st.error("Usuario o contraseña incorrectos.")
@@ -84,7 +97,6 @@ else:
         lista_productos = []
         lista_mp = []
 
-    # DISPARAR ALERTAS FLOTANTES EN CUALQUIER PESTAÑA
     verificar_alertas_flotantes(lista_mp, lista_productos)
 
     # LAS 6 PESTAÑAS
@@ -106,7 +118,6 @@ else:
         
         st.markdown("### 🎛️ Panel de Acciones y Pedidos")
         
-        # Cambio 2: Formulario de Registro de Pedido con selector de productos existentes y cantidad
         with st.form("form_registrar_pedido"):
             st.subheader("📥 Registrar Nuevo Pedido")
             nombres_productos = [p['nombre'] for p in lista_productos] if lista_productos else []
@@ -133,7 +144,6 @@ else:
 
         st.markdown("---")
         
-        # Cambio 5: Botones adaptados a móviles (verticales/grandes)
         if st.button("⚙️ Iniciar Producción (Siguiente Pendiente)", use_container_width=True):
             update_data = {
                 "estado": "En Producción",
@@ -172,8 +182,7 @@ else:
             if todos_pedidos:
                 st.dataframe(pd.DataFrame(todos_pedidos), use_container_width=True)
                 
-                # Cambio 3: Sección de eliminación restringida solo para mininpared@gmail.com
-                if st.session_state.get("email_user") == "mininpared@gmail.com":
+                if es_administrador():
                     with st.expander("🗑️ Zona de Administración (Eliminar Pedido)"):
                         ids_pedidos = [str(p['id']) for p in todos_pedidos]
                         id_a_borrar = st.selectbox("Seleccionar ID de Pedido a Eliminar", ids_pedidos)
@@ -229,8 +238,7 @@ else:
         if lista_mp:
             st.dataframe(pd.DataFrame(lista_mp), use_container_width=True)
             
-            # Cambio 3: Eliminación restringida en Materias Primas
-            if st.session_state.get("email_user") == "mininpared@gmail.com":
+            if es_administrador():
                 with st.expander("🗑️ Zona de Administración (Eliminar Materia Prima)"):
                     nombres_mps = [m['nombre'] for m in lista_mp]
                     mp_a_borrar = st.selectbox("Seleccionar Materia Prima a Eliminar", nombres_mps)
@@ -243,10 +251,10 @@ else:
             st.info("No hay materias primas registradas.")
 
     # ==========================================
-    # 3. PESTAÑA PRODUCTOS Y STOCK
+    # 3. PESTAÑA PRODUCTOS Y STOCK (Con Categorías y Recetas Limpias)
     # ==========================================
     with tab_stock:
-        st.header("Gestión de Productos y Recetas")
+        st.header("Gestión de Productos, Categorías y Recetas")
         
         st.subheader("1. Armar Receta (Múltiples Ingredientes)")
         nombres_mp = [m['nombre'] for m in lista_mp] if lista_mp else ["Sin materias primas"]
@@ -261,15 +269,23 @@ else:
                 
         if st.session_state.receta_temp:
             st.write("**Ingredientes cargados para este producto:**")
-            st.json(st.session_state.receta_temp)
+            # Mostramos en formato de texto limpio separado por comas
+            texto_ingredientes = ", ".join([f"{item['cantidad']}x {item['material']}" for item in st.session_state.receta_temp])
+            st.info(f"📋 **Receta actual:** {texto_ingredientes}")
+            
             if st.button("🗑️ Limpiar receta temporal", use_container_width=True):
                 st.session_state.receta_temp = []
                 st.rerun()
 
         st.divider()
-        st.subheader("2. Guardar Producto Nuevo")
+        st.subheader("2. Guardar Producto Nuevo con Categoría")
         with st.form("form_producto"):
             nombre_nuevo_prod = st.text_input("Nombre del Producto Final")
+            # Selección o creación de categoría
+            categoria_prod = st.text_input("Categoría (ej: Cuadernos, Agendas, Calendarios)").strip().capitalize()
+            if not categoria_prod:
+                categoria_prod = "General"
+                
             stock_ini_prod = st.number_input("Stock inicial", min_value=0, value=0)
             minimo_prod = st.number_input("Stock Mínimo para Alertas", min_value=0, value=0)
             
@@ -277,23 +293,59 @@ else:
                 if nombre_nuevo_prod:
                     nuevo_prod = {
                         "nombre": nombre_nuevo_prod,
+                        "categoria": categoria_prod,
                         "cantidad": stock_ini_prod,
                         "minimo": minimo_prod,
                         "receta": st.session_state.receta_temp 
                     }
                     supabase.table("productos").insert(nuevo_prod).execute()
-                    registrar_movimiento(st.session_state.user, "Creó Producto", f"Nuevo producto: {nombre_nuevo_prod}")
+                    registrar_movimiento(st.session_state.user, "Creó Producto", f"Nuevo producto: {nombre_nuevo_prod} [{categoria_prod}]")
                     st.session_state.receta_temp = [] 
                     st.success("¡Producto y receta guardados con éxito!")
                     st.rerun()
                     
         st.divider()
-        st.subheader("Inventario Actual de Productos")
+        st.subheader("Inventario y Filtrado por Categoría")
         if lista_productos:
-            st.dataframe(pd.DataFrame(lista_productos), use_container_width=True)
+            # Preparamos un DataFrame amigable transformando el JSON de la receta en texto plano separado por comas
+            productos_limpios = []
+            for p in lista_productos:
+                receta_raw = p.get('receta', [])
+                if isinstance(receta_raw, str):
+                    try:
+                        receta_raw = json.loads(receta_raw)
+                    except:
+                        receta_raw = []
+                
+                # Convertimos la receta en un string limpio separado por comas
+                if isinstance(receta_raw, list) and len(receta_raw) > 0:
+                    str_receta = ", ".join([f"{item.get('cantidad', '')} {item.get('material', '')}" for item in receta_raw])
+                else:
+                    str_receta = "Sin receta"
+
+                cat = p.get('categoria', 'General')
+                productos_limpios.append({
+                    "nombre": p.get('nombre'),
+                    "categoria": cat,
+                    "cantidad": p.get('cantidad', 0),
+                    "minimo": p.get('minimo', 0),
+                    "receta": str_receta
+                })
             
-            # Cambio 3: Eliminación restringida en Productos
-            if st.session_state.get("email_user") == "mininpared@gmail.com":
+            df_prods = pd.DataFrame(productos_limpios)
+            
+            # Filtro por categoría visual con color indicador
+            categorias_disponibles = ["Todas"] + list(df_prods['categoria'].unique())
+            cat_seleccionada = st.selectbox("Filtrar por Categoría", categorias_disponibles)
+            
+            if cat_seleccionada != "Todas":
+                df_prods_filtrado = df_prods[df_prods['categoria'] == cat_seleccionada]
+            else:
+                df_prods_filtrado = df_prods
+                
+            st.dataframe(df_prods_filtrado, use_container_width=True)
+            
+            if es_administrador():
                 with st.expander("🗑️ Zona de Administración (Eliminar Producto)"):
                     prods_nombres = [p['nombre'] for p in lista_productos]
                     prod_a_borrar = st.selectbox("Seleccionar Producto a Eliminar", prods_nombres)
@@ -306,12 +358,11 @@ else:
             st.info("No hay productos cargados.")
 
     # ==========================================
-    # 4. PESTAÑA VENTAS (Con Formulario Interactivo)
+    # 4. PESTAÑA VENTAS
     # ==========================================
     with tab_ventas:
         st.header("Registro de Salidas y Ventas")
         
-        # Cambio 4: Formulario interactivo en Ventas con autocompletado y operario
         with st.form("form_registrar_venta"):
             st.subheader("📦 Registrar Nueva Salida / Venta")
             nombres_productos = [p['nombre'] for p in lista_productos] if lista_productos else []
@@ -342,8 +393,7 @@ else:
             if ventas:
                 st.dataframe(pd.DataFrame(ventas), use_container_width=True)
                 
-                # Cambio 3: Eliminación restringida en Ventas
-                if st.session_state.get("email_user") == "mininpared@gmail.com":
+                if es_administrador():
                     with st.expander("🗑️ Zona de Administración (Eliminar Venta)"):
                         ids_ventas = [str(v['id']) for v in ventas] if 'id' in ventas[0] else []
                         if ids_ventas:
@@ -359,7 +409,7 @@ else:
             st.error(f"Error al cargar ventas: {e}")
 
     # ==========================================
-    # 5. PESTAÑA REGISTROS (AUDITORÍA TOTAL)
+    # 5. PESTAÑA REGISTROS (Con Buscador Predictivo)
     # ==========================================
     with tab_registros:
         st.header("📜 Auditoría y Registro General de Movimientos")
@@ -367,7 +417,19 @@ else:
             regs = supabase.table("registros").select("*").order("fecha_hora", desc=True).execute().data
             if regs:
                 df_regs = pd.DataFrame(regs)
-                st.dataframe(df_regs, use_container_width=True)
+                
+                # Buscador predictivo en tiempo real
+                query_busqueda = st.text_input("🔍 Búsqueda predictiva en registros (escribe operario, acción o detalle):").strip().lower()
+                
+                if query_busqueda:
+                    # Filtra las filas donde cualquier columna contenga el texto buscado
+                    mask = df_regs.astype(str).apply(lambda x: x.str.lower().str.contains(query_busqueda)).any(axis=1)
+                    df_regs_filtrado = df_regs[mask]
+                else:
+                    df_regs_filtrado = df_regs
+                    
+                st.dataframe(df_regs_filtrado, use_container_width=True)
+                
                 st.download_button(
                     label="📥 Descargar Historial Completo (CSV)",
                     data=df_regs.to_csv(index=False).encode('utf-8'),
