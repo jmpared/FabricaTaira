@@ -37,9 +37,12 @@ def registrar_movimiento(usuario, accion, detalle):
     except Exception as e:
         pass
 
-# --- VALIDACIÓN DE ADMINISTRADOR ---
+# --- VALIDACIÓN DE ADMINISTRADOR (A PRUEBA DE BALAS) ---
 def es_administrador():
-    return st.session_state.get("email_user", "").strip().lower() == "mininpared@gmail.com"
+    correo = st.session_state.get("email_user", "").strip().lower()
+    usuario = st.session_state.get("user", "").strip().lower()
+    # Verifica tanto el correo exacto como el nombre de usuario generado
+    return correo == "mininpared@gmail.com" or usuario == "mininpared"
 
 # --- GENERADOR DE COLOR AUTOMÁTICO PARA CATEGORÍAS ---
 def obtener_color_categoria(categoria):
@@ -84,6 +87,9 @@ else:
         if st.button("Cerrar Sesión", use_container_width=True):
             supabase.auth.sign_out()
             st.session_state.autenticado = False
+            # Limpiar variables para forzar relogueo limpio
+            st.session_state.pop("email_user", None)
+            st.session_state.pop("user", None)
             st.rerun()
 
     st.title("📦 FÁBRICA TAIRA - Sistema Integral")
@@ -181,8 +187,9 @@ else:
             if todos_pedidos:
                 st.dataframe(pd.DataFrame(todos_pedidos), use_container_width=True)
                 
+                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
                 if es_administrador():
-                    st.markdown("### ⚙️ Administrar Órdenes")
+                    st.markdown("### ⚙️ Administrar Órdenes (Solo Admin)")
                     col_edit_ped, col_del_ped = st.columns(2)
                     ids_pedidos = [str(p['id']) for p in todos_pedidos]
                     
@@ -255,8 +262,9 @@ else:
         if lista_mp:
             st.dataframe(pd.DataFrame(lista_mp), use_container_width=True)
             
+            # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
             if es_administrador():
-                st.markdown("### ⚙️ Administrar Materias Primas")
+                st.markdown("### ⚙️ Administrar Materias Primas (Solo Admin)")
                 col_edit_mp, col_del_mp = st.columns(2)
                 nombres_mps = [m['nombre'] for m in lista_mp]
                 
@@ -388,8 +396,9 @@ else:
                 
             st.dataframe(df_prods_filtrado, use_container_width=True)
             
+            # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
             if es_administrador():
-                st.markdown("### ⚙️ Administrar Productos")
+                st.markdown("### ⚙️ Administrar Productos (Solo Admin)")
                 col_edit_prod, col_del_prod = st.columns(2)
                 prods_nombres = [p['nombre'] for p in lista_productos]
                 
@@ -465,8 +474,9 @@ else:
             if ventas:
                 st.dataframe(pd.DataFrame(ventas), use_container_width=True)
                 
+                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
                 if es_administrador():
-                    st.markdown("### ⚙️ Administrar Ventas")
+                    st.markdown("### ⚙️ Administrar Ventas (Solo Admin)")
                     col_edit_venta, col_del_venta = st.columns(2)
                     ids_ventas = [str(v['id']) for v in ventas] if 'id' in ventas[0] else []
                     
@@ -498,7 +508,7 @@ else:
             st.error(f"Error al cargar ventas: {e}")
 
     # ==========================================
-    # 5. PESTAÑA REGISTROS (Con Buscador Predictivo)
+    # 5. PESTAÑA REGISTROS (Auditoría)
     # ==========================================
     with tab_registros:
         st.header("📜 Auditoría y Registro General de Movimientos")
@@ -524,6 +534,19 @@ else:
                     mime='text/csv',
                     use_container_width=True
                 )
+                
+                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR (Para borrar registros erróneos)
+                if es_administrador():
+                    st.divider()
+                    st.markdown("### ⚙️ Administrar Registros de Auditoría (Solo Admin)")
+                    with st.expander("🗑️ Eliminar Registro del Historial"):
+                        ids_regs = [str(r['id']) for r in regs] if 'id' in regs[0] else []
+                        if ids_regs:
+                            reg_a_borrar = st.selectbox("Seleccionar ID de Registro a Eliminar", ids_regs, key="del_reg_sel")
+                            if st.button("Eliminar Registro Definitivamente", type="primary", use_container_width=True):
+                                supabase.table("registros").delete().eq("id", int(reg_a_borrar)).execute()
+                                st.success(f"Registro ID {reg_a_borrar} eliminado.")
+                                st.rerun()
             else:
                 st.info("Aún no hay registros de auditoría.")
         except Exception as e:
