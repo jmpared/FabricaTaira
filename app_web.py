@@ -44,7 +44,6 @@ def es_administrador():
 # --- GENERADOR DE COLOR AUTOMÁTICO PARA CATEGORÍAS ---
 def obtener_color_categoria(categoria):
     if categoria not in st.session_state.categorias_colores:
-        # Colores pasteles amigables aleatorios
         colores = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC3", "#BAE1FF", "#E8BAFF", "#FFBABE"]
         st.session_state.categorias_colores[categoria] = random.choice(colores)
     return st.session_state.categorias_colores[categoria]
@@ -183,14 +182,32 @@ else:
                 st.dataframe(pd.DataFrame(todos_pedidos), use_container_width=True)
                 
                 if es_administrador():
-                    with st.expander("🗑️ Zona de Administración (Eliminar Pedido)"):
-                        ids_pedidos = [str(p['id']) for p in todos_pedidos]
-                        id_a_borrar = st.selectbox("Seleccionar ID de Pedido a Eliminar", ids_pedidos)
-                        if st.button("Eliminar Orden Seleccionada", type="primary", use_container_width=True):
-                            supabase.table("pedidos_produccion").delete().eq("id", int(id_a_borrar)).execute()
-                            registrar_movimiento(st.session_state.user, "Eliminó Pedido", f"Se eliminó la orden ID {id_a_borrar}")
-                            st.success(f"Orden ID {id_a_borrar} eliminada correctamente.")
-                            st.rerun()
+                    st.markdown("### ⚙️ Administrar Órdenes")
+                    col_edit_ped, col_del_ped = st.columns(2)
+                    ids_pedidos = [str(p['id']) for p in todos_pedidos]
+                    
+                    with col_edit_ped:
+                        with st.expander("✏️ Editar Pedido"):
+                            id_a_editar = st.selectbox("Seleccionar ID a Editar", ids_pedidos, key="edit_ped_sel")
+                            if id_a_editar:
+                                ped_data = next((p for p in todos_pedidos if str(p['id']) == id_a_editar), None)
+                                with st.form("form_edit_ped"):
+                                    nuevo_estado = st.selectbox("Estado", ["Pendiente", "En Producción", "Finalizado"], index=["Pendiente", "En Producción", "Finalizado"].index(ped_data.get('estado', 'Pendiente')))
+                                    nueva_cant = st.number_input("Cantidad", value=int(ped_data.get('cantidad', 1)))
+                                    if st.form_submit_button("Guardar Cambios"):
+                                        supabase.table("pedidos_produccion").update({"estado": nuevo_estado, "cantidad": nueva_cant}).eq("id", int(id_a_editar)).execute()
+                                        registrar_movimiento(st.session_state.user, "Editó Pedido", f"ID {id_a_editar} modificado")
+                                        st.success("Actualizado.")
+                                        st.rerun()
+                    
+                    with col_del_ped:
+                        with st.expander("🗑️ Eliminar Pedido"):
+                            id_a_borrar = st.selectbox("Seleccionar ID a Eliminar", ids_pedidos, key="del_ped_sel")
+                            if st.button("Eliminar Orden Seleccionada", type="primary", use_container_width=True):
+                                supabase.table("pedidos_produccion").delete().eq("id", int(id_a_borrar)).execute()
+                                registrar_movimiento(st.session_state.user, "Eliminó Pedido", f"Se eliminó la orden ID {id_a_borrar}")
+                                st.success("Orden eliminada.")
+                                st.rerun()
             else:
                 st.info("No hay pedidos cargados.")
         except Exception as e:
@@ -239,19 +256,52 @@ else:
             st.dataframe(pd.DataFrame(lista_mp), use_container_width=True)
             
             if es_administrador():
-                with st.expander("🗑️ Zona de Administración (Eliminar Materia Prima)"):
-                    nombres_mps = [m['nombre'] for m in lista_mp]
-                    mp_a_borrar = st.selectbox("Seleccionar Materia Prima a Eliminar", nombres_mps)
-                    if st.button("Eliminar Materia Prima", type="primary", use_container_width=True):
-                        supabase.table("materias_primas").delete().eq("nombre", mp_a_borrar).execute()
-                        registrar_movimiento(st.session_state.user, "Eliminó Materia Prima", f"Se eliminó {mp_a_borrar}")
-                        st.success(f"Materia prima '{mp_a_borrar}' eliminada.")
-                        st.rerun()
+                st.markdown("### ⚙️ Administrar Materias Primas")
+                col_edit_mp, col_del_mp = st.columns(2)
+                nombres_mps = [m['nombre'] for m in lista_mp]
+                
+                with col_edit_mp:
+                    with st.expander("✏️ Editar Materia Prima"):
+                        mp_a_editar = st.selectbox("Seleccionar Materia Prima", nombres_mps, key="edit_mp_sel")
+                        if mp_a_editar:
+                            datos_mp = next((m for m in lista_mp if m['nombre'] == mp_a_editar), None)
+                            with st.form("form_edit_mp"):
+                                val_cant = float(datos_mp.get('cantidad') or 0.0)
+                                val_long = float(datos_mp.get('longitud') or 0.0)
+                                val_actual = val_long if datos_mp.get('tipo') == "Longitud (cm)" else val_cant
+                                
+                                nuevo_nombre = st.text_input("Nombre", value=datos_mp['nombre'])
+                                nueva_cant = st.number_input("Cantidad/Longitud", value=val_actual)
+                                nuevo_min = st.number_input("Mínimo", value=float(datos_mp.get('minimo') or 0.0))
+                                
+                                if st.form_submit_button("Guardar Cambios"):
+                                    upd_mp = {
+                                        "nombre": nuevo_nombre,
+                                        "minimo": nuevo_min,
+                                        "cantidad": 0 if datos_mp.get('tipo') == "Longitud (cm)" else nueva_cant,
+                                        "longitud": nueva_cant if datos_mp.get('tipo') == "Longitud (cm)" else 0
+                                    }
+                                    if 'id' in datos_mp:
+                                        supabase.table("materias_primas").update(upd_mp).eq("id", datos_mp['id']).execute()
+                                    else:
+                                        supabase.table("materias_primas").update(upd_mp).eq("nombre", mp_a_editar).execute()
+                                    registrar_movimiento(st.session_state.user, "Editó MP", f"Modificó {mp_a_editar}")
+                                    st.success("Actualizado.")
+                                    st.rerun()
+
+                with col_del_mp:
+                    with st.expander("🗑️ Eliminar Materia Prima"):
+                        mp_a_borrar = st.selectbox("Seleccionar Materia Prima a Eliminar", nombres_mps, key="del_mp_sel")
+                        if st.button("Eliminar Materia Prima", type="primary", use_container_width=True):
+                            supabase.table("materias_primas").delete().eq("nombre", mp_a_borrar).execute()
+                            registrar_movimiento(st.session_state.user, "Eliminó Materia Prima", f"Se eliminó {mp_a_borrar}")
+                            st.success(f"Materia prima '{mp_a_borrar}' eliminada.")
+                            st.rerun()
         else:
             st.info("No hay materias primas registradas.")
 
     # ==========================================
-    # 3. PESTAÑA PRODUCTOS Y STOCK (Con Categorías y Recetas Limpias)
+    # 3. PESTAÑA PRODUCTOS Y STOCK
     # ==========================================
     with tab_stock:
         st.header("Gestión de Productos, Categorías y Recetas")
@@ -268,8 +318,6 @@ else:
                 st.rerun()
                 
         if st.session_state.receta_temp:
-            st.write("**Ingredientes cargados para este producto:**")
-            # Mostramos en formato de texto limpio separado por comas
             texto_ingredientes = ", ".join([f"{item['cantidad']}x {item['material']}" for item in st.session_state.receta_temp])
             st.info(f"📋 **Receta actual:** {texto_ingredientes}")
             
@@ -281,7 +329,6 @@ else:
         st.subheader("2. Guardar Producto Nuevo con Categoría")
         with st.form("form_producto"):
             nombre_nuevo_prod = st.text_input("Nombre del Producto Final")
-            # Selección o creación de categoría
             categoria_prod = st.text_input("Categoría (ej: Cuadernos, Agendas, Calendarios)").strip().capitalize()
             if not categoria_prod:
                 categoria_prod = "General"
@@ -307,7 +354,6 @@ else:
         st.divider()
         st.subheader("Inventario y Filtrado por Categoría")
         if lista_productos:
-            # Preparamos un DataFrame amigable transformando el JSON de la receta en texto plano separado por comas
             productos_limpios = []
             for p in lista_productos:
                 receta_raw = p.get('receta', [])
@@ -317,7 +363,6 @@ else:
                     except:
                         receta_raw = []
                 
-                # Convertimos la receta en un string limpio separado por comas
                 if isinstance(receta_raw, list) and len(receta_raw) > 0:
                     str_receta = ", ".join([f"{item.get('cantidad', '')} {item.get('material', '')}" for item in receta_raw])
                 else:
@@ -333,8 +378,6 @@ else:
                 })
             
             df_prods = pd.DataFrame(productos_limpios)
-            
-            # Filtro por categoría visual con color indicador
             categorias_disponibles = ["Todas"] + list(df_prods['categoria'].unique())
             cat_seleccionada = st.selectbox("Filtrar por Categoría", categorias_disponibles)
             
@@ -346,14 +389,43 @@ else:
             st.dataframe(df_prods_filtrado, use_container_width=True)
             
             if es_administrador():
-                with st.expander("🗑️ Zona de Administración (Eliminar Producto)"):
-                    prods_nombres = [p['nombre'] for p in lista_productos]
-                    prod_a_borrar = st.selectbox("Seleccionar Producto a Eliminar", prods_nombres)
-                    if st.button("Eliminar Producto", type="primary", use_container_width=True):
-                        supabase.table("productos").delete().eq("nombre", prod_a_borrar).execute()
-                        registrar_movimiento(st.session_state.user, "Eliminó Producto", f"Se eliminó {prod_a_borrar}")
-                        st.success(f"Producto '{prod_a_borrar}' eliminado.")
-                        st.rerun()
+                st.markdown("### ⚙️ Administrar Productos")
+                col_edit_prod, col_del_prod = st.columns(2)
+                prods_nombres = [p['nombre'] for p in lista_productos]
+                
+                with col_edit_prod:
+                    with st.expander("✏️ Editar Producto"):
+                        prod_a_editar = st.selectbox("Seleccionar Producto", prods_nombres, key="edit_prod_sel")
+                        if prod_a_editar:
+                            datos_prod = next((p for p in lista_productos if p['nombre'] == prod_a_editar), None)
+                            with st.form("form_edit_prod"):
+                                nuevo_nombre = st.text_input("Nombre", value=datos_prod['nombre'])
+                                nueva_cat = st.text_input("Categoría", value=datos_prod.get('categoria', 'General'))
+                                nueva_cant = st.number_input("Cantidad", value=int(datos_prod.get('cantidad', 0)))
+                                nuevo_min = st.number_input("Mínimo", value=int(datos_prod.get('minimo', 0)))
+                                if st.form_submit_button("Guardar Cambios"):
+                                    upd_prod = {
+                                        "nombre": nuevo_nombre,
+                                        "categoria": nueva_cat,
+                                        "cantidad": nueva_cant,
+                                        "minimo": nuevo_min
+                                    }
+                                    if 'id' in datos_prod:
+                                        supabase.table("productos").update(upd_prod).eq("id", datos_prod['id']).execute()
+                                    else:
+                                        supabase.table("productos").update(upd_prod).eq("nombre", prod_a_editar).execute()
+                                    registrar_movimiento(st.session_state.user, "Editó Producto", f"Modificó {prod_a_editar}")
+                                    st.success("Actualizado.")
+                                    st.rerun()
+
+                with col_del_prod:
+                    with st.expander("🗑️ Eliminar Producto"):
+                        prod_a_borrar = st.selectbox("Seleccionar Producto a Eliminar", prods_nombres, key="del_prod_sel")
+                        if st.button("Eliminar Producto", type="primary", use_container_width=True):
+                            supabase.table("productos").delete().eq("nombre", prod_a_borrar).execute()
+                            registrar_movimiento(st.session_state.user, "Eliminó Producto", f"Se eliminó {prod_a_borrar}")
+                            st.success(f"Producto '{prod_a_borrar}' eliminado.")
+                            st.rerun()
         else:
             st.info("No hay productos cargados.")
 
@@ -394,15 +466,32 @@ else:
                 st.dataframe(pd.DataFrame(ventas), use_container_width=True)
                 
                 if es_administrador():
-                    with st.expander("🗑️ Zona de Administración (Eliminar Venta)"):
-                        ids_ventas = [str(v['id']) for v in ventas] if 'id' in ventas[0] else []
-                        if ids_ventas:
-                            v_a_borrar = st.selectbox("Seleccionar ID de Venta a Eliminar", ids_ventas)
-                            if st.button("Eliminar Registro de Venta", type="primary", use_container_width=True):
-                                supabase.table("ventas_historial").delete().eq("id", int(v_a_borrar)).execute()
-                                registrar_movimiento(st.session_state.user, "Eliminó Venta", f"Se eliminó registro de venta ID {v_a_borrar}")
-                                st.success(f"Registro de venta ID {v_a_borrar} eliminado.")
-                                st.rerun()
+                    st.markdown("### ⚙️ Administrar Ventas")
+                    col_edit_venta, col_del_venta = st.columns(2)
+                    ids_ventas = [str(v['id']) for v in ventas] if 'id' in ventas[0] else []
+                    
+                    if ids_ventas:
+                        with col_edit_venta:
+                            with st.expander("✏️ Editar Venta"):
+                                id_a_editar = st.selectbox("Seleccionar ID de Venta", ids_ventas, key="edit_venta_sel")
+                                if id_a_editar:
+                                    datos_venta = next((v for v in ventas if str(v['id']) == id_a_editar), None)
+                                    with st.form("form_edit_venta"):
+                                        nueva_cant = st.number_input("Cantidad Vendida", value=int(datos_venta.get('cantidad', 1)))
+                                        if st.form_submit_button("Guardar Cambios"):
+                                            supabase.table("ventas_historial").update({"cantidad": nueva_cant}).eq("id", int(id_a_editar)).execute()
+                                            registrar_movimiento(st.session_state.user, "Editó Venta", f"ID {id_a_editar} actualizado")
+                                            st.success("Actualizado.")
+                                            st.rerun()
+
+                        with col_del_venta:
+                            with st.expander("🗑️ Eliminar Venta"):
+                                v_a_borrar = st.selectbox("Seleccionar ID a Eliminar", ids_ventas, key="del_venta_sel")
+                                if st.button("Eliminar Registro", type="primary", use_container_width=True):
+                                    supabase.table("ventas_historial").delete().eq("id", int(v_a_borrar)).execute()
+                                    registrar_movimiento(st.session_state.user, "Eliminó Venta", f"Se eliminó registro de venta ID {v_a_borrar}")
+                                    st.success("Registro eliminado.")
+                                    st.rerun()
             else:
                 st.info("No hay ventas registradas.")
         except Exception as e:
@@ -418,11 +507,9 @@ else:
             if regs:
                 df_regs = pd.DataFrame(regs)
                 
-                # Buscador predictivo en tiempo real
                 query_busqueda = st.text_input("🔍 Búsqueda predictiva en registros (escribe operario, acción o detalle):").strip().lower()
                 
                 if query_busqueda:
-                    # Filtra las filas donde cualquier columna contenga el texto buscado
                     mask = df_regs.astype(str).apply(lambda x: x.str.lower().str.contains(query_busqueda)).any(axis=1)
                     df_regs_filtrado = df_regs[mask]
                 else:
