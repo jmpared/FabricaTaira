@@ -37,12 +37,13 @@ def registrar_movimiento(usuario, accion, detalle):
     except Exception as e:
         pass
 
-# --- VALIDACIÓN DE ADMINISTRADOR (A PRUEBA DE BALAS) ---
+# --- VALIDACIÓN DE ADMINISTRADOR MEJORADA ---
 def es_administrador():
     correo = st.session_state.get("email_user", "").strip().lower()
     usuario = st.session_state.get("user", "").strip().lower()
-    # Verifica tanto el correo exacto como el nombre de usuario generado
-    return correo == "mininpared@gmail.com" or usuario == "mininpared"
+    # Ahora detecta tus dos correos o variantes de tu nombre para asegurar que veas el panel
+    correos_admin = ["mininpared@gmail.com", "eleminino.pared@gmail.com"]
+    return (correo in correos_admin) or ("minin" in correo) or ("mini" in usuario)
 
 # --- GENERADOR DE COLOR AUTOMÁTICO PARA CATEGORÍAS ---
 def obtener_color_categoria(categoria):
@@ -87,7 +88,6 @@ else:
         if st.button("Cerrar Sesión", use_container_width=True):
             supabase.auth.sign_out()
             st.session_state.autenticado = False
-            # Limpiar variables para forzar relogueo limpio
             st.session_state.pop("email_user", None)
             st.session_state.pop("user", None)
             st.rerun()
@@ -121,10 +121,13 @@ else:
         st.header("Control de Producción y Ciclos")
         st.write(f"Operario actual: **{st.session_state.user}**")
         
-        st.markdown("### 🎛️ Panel de Acciones y Pedidos")
-        
+        try:
+            todos_pedidos = supabase.table("pedidos_produccion").select("*").execute().data
+        except Exception as e:
+            todos_pedidos = []
+
+        st.markdown("### 📥 1. Registrar Nuevo Pedido")
         with st.form("form_registrar_pedido"):
-            st.subheader("📥 Registrar Nuevo Pedido")
             nombres_productos = [p['nombre'] for p in lista_productos] if lista_productos else []
             
             if nombres_productos:
@@ -149,76 +152,114 @@ else:
 
         st.markdown("---")
         
-        if st.button("⚙️ Iniciar Producción (Siguiente Pendiente)", use_container_width=True):
-            update_data = {
-                "estado": "En Producción",
-                "fecha_produccion": str(datetime.now().date()),
-                "producido_por": st.session_state.user
-            }
-            pendientes = [p for p in supabase.table("pedidos_produccion").select("*").execute().data if p.get('estado') == "Pendiente"]
+        st.markdown("### ⚙️ 2. Gestión de Lotes en Curso")
+        
+        pendientes = [p for p in todos_pedidos if p.get('estado') == "Pendiente"]
+        en_produccion = [p for p in todos_pedidos if p.get('estado') == "En Producción"]
+        
+        col_iniciar, col_finalizar = st.columns(2)
+        
+        with col_iniciar:
+            st.info("▶️ **INICIAR PRODUCCIÓN**")
             if pendientes:
-                ultimo_id = pendientes[-1]['id']
-                supabase.table("pedidos_produccion").update(update_data).eq("id", ultimo_id).execute()
-                registrar_movimiento(st.session_state.user, "Inicio Producción", f"Se inició el lote ID {ultimo_id}")
-                st.success("¡Producción iniciada!")
-                st.rerun()
+                opciones_pend = {f"ID {p['id']} | {p['cantidad']}x {p['producto']}": p['id'] for p in pendientes}
+                seleccion_iniciar = st.multiselect("Seleccionar órdenes para INICIAR:", list(opciones_pend.keys()))
+                
+                if st.button("Iniciar Seleccionadas", use_container_width=True, type="primary"):
+                    if seleccion_iniciar:
+                        for sel in seleccion_iniciar:
+                            id_ped = opciones_pend[sel]
+                            update_data = {
+                                "estado": "En Producción",
+                                "fecha_produccion": str(datetime.now().date()),
+                                "producido_por": st.session_state.user
+                            }
+                            supabase.table("pedidos_produccion").update(update_data).eq("id", id_ped).execute()
+                            registrar_movimiento(st.session_state.user, "Inicio Producción", f"Inició lote ID {id_ped}")
+                        st.success(f"¡Se iniciaron {len(seleccion_iniciar)} órdenes!")
+                        st.rerun()
+                    else:
+                        st.warning("Selecciona al menos una orden.")
             else:
-                st.warning("No hay pedidos pendientes para iniciar.")
+                st.write("✅ No hay pedidos pendientes.")
 
-        if st.button("✅ Producto Terminado", use_container_width=True):
-            en_curso = [p for p in supabase.table("pedidos_produccion").select("*").execute().data if p.get('estado') == "En Producción"]
-            if en_curso:
-                p = en_curso[-1]
-                update_fin = {
-                    "estado": "Finalizado",
-                    "fecha_finalizacion": str(datetime.now().date())
-                }
-                supabase.table("pedidos_produccion").update(update_fin).eq("id", p['id']).execute()
-                registrar_movimiento(st.session_state.user, "Producto Terminado", f"Se finalizó el lote de {p['producto']}")
-                st.success("¡Producción finalizada con éxito!")
-                st.rerun()
+        with col_finalizar:
+            st.success("✅ **FINALIZAR PRODUCCIÓN (Suma al Stock)**")
+            if en_produccion:
+                opciones_prod = {f"ID {p['id']} | {p['cantidad']}x {p['producto']}": p['id'] for p in en_produccion}
+                seleccion_fin = st.multiselect("Seleccionar órdenes TERMINADAS:", list(opciones_prod.keys()))
+                
+                if st.button("Finalizar Seleccionadas", use_container_width=True, type="primary"):
+                    if seleccion_fin:
+                        for sel in seleccion_fin:
+                            id_ped = opciones_prod[sel]
+                            pedido = next((p for p in en_produccion if p['id'] == id_ped), None)
+                            
+                            if pedido:
+                                # 1. Actualizar estado del pedido a finalizado
+                                update_fin = {
+                                    "estado": "Finalizado",
+                                    "fecha_finalizacion": str(datetime.now().date())
+                                }
+                                supabase.table("pedidos_produccion").update(update_fin).eq("id", id_ped).execute()
+                                
+                                # 2. SUMAR AL INVENTARIO DE PRODUCTOS
+                                prod_nombre = pedido['producto']
+                                cant_fabricada = float(pedido['cantidad'])
+                                
+                                try:
+                                    # Traemos la cantidad actual directamente de la DB para ser precisos
+                                    prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_nombre).execute().data
+                                    if prod_db:
+                                        stock_actual = float(prod_db[0].get("cantidad") or 0)
+                                        nuevo_stock = stock_actual + cant_fabricada
+                                        supabase.table("productos").update({"cantidad": nuevo_stock}).eq("nombre", prod_nombre).execute()
+                                except Exception as e:
+                                    pass
+
+                                registrar_movimiento(st.session_state.user, "Producto Terminado", f"Finalizó lote ID {id_ped} (+{cant_fabricada} {prod_nombre})")
+                                
+                        st.success(f"¡Se finalizaron {len(seleccion_fin)} órdenes y se ACTUALIZÓ el stock!")
+                        st.rerun()
+                    else:
+                        st.warning("Selecciona al menos una orden.")
             else:
-                st.warning("No hay producciones en curso para finalizar.")
+                st.write("💤 No hay órdenes en curso en este momento.")
 
         st.divider()
-        st.subheader("📋 Órdenes Registradas")
-        try:
-            todos_pedidos = supabase.table("pedidos_produccion").select("*").execute().data
-            if todos_pedidos:
-                st.dataframe(pd.DataFrame(todos_pedidos), use_container_width=True)
+        st.subheader("📋 3. Órdenes Registradas (Historial General)")
+        if todos_pedidos:
+            st.dataframe(pd.DataFrame(todos_pedidos), use_container_width=True)
+            
+            if es_administrador():
+                st.markdown("### ⚙️ Administrar Órdenes (Solo Admin)")
+                col_edit_ped, col_del_ped = st.columns(2)
+                ids_pedidos = [str(p['id']) for p in todos_pedidos]
                 
-                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
-                if es_administrador():
-                    st.markdown("### ⚙️ Administrar Órdenes (Solo Admin)")
-                    col_edit_ped, col_del_ped = st.columns(2)
-                    ids_pedidos = [str(p['id']) for p in todos_pedidos]
-                    
-                    with col_edit_ped:
-                        with st.expander("✏️ Editar Pedido"):
-                            id_a_editar = st.selectbox("Seleccionar ID a Editar", ids_pedidos, key="edit_ped_sel")
-                            if id_a_editar:
-                                ped_data = next((p for p in todos_pedidos if str(p['id']) == id_a_editar), None)
-                                with st.form("form_edit_ped"):
-                                    nuevo_estado = st.selectbox("Estado", ["Pendiente", "En Producción", "Finalizado"], index=["Pendiente", "En Producción", "Finalizado"].index(ped_data.get('estado', 'Pendiente')))
-                                    nueva_cant = st.number_input("Cantidad", value=int(ped_data.get('cantidad', 1)))
-                                    if st.form_submit_button("Guardar Cambios"):
-                                        supabase.table("pedidos_produccion").update({"estado": nuevo_estado, "cantidad": nueva_cant}).eq("id", int(id_a_editar)).execute()
-                                        registrar_movimiento(st.session_state.user, "Editó Pedido", f"ID {id_a_editar} modificado")
-                                        st.success("Actualizado.")
-                                        st.rerun()
-                    
-                    with col_del_ped:
-                        with st.expander("🗑️ Eliminar Pedido"):
-                            id_a_borrar = st.selectbox("Seleccionar ID a Eliminar", ids_pedidos, key="del_ped_sel")
-                            if st.button("Eliminar Orden Seleccionada", type="primary", use_container_width=True):
-                                supabase.table("pedidos_produccion").delete().eq("id", int(id_a_borrar)).execute()
-                                registrar_movimiento(st.session_state.user, "Eliminó Pedido", f"Se eliminó la orden ID {id_a_borrar}")
-                                st.success("Orden eliminada.")
-                                st.rerun()
-            else:
-                st.info("No hay pedidos cargados.")
-        except Exception as e:
-            st.error(f"Error al cargar pedidos: {e}")
+                with col_edit_ped:
+                    with st.expander("✏️ Editar Pedido"):
+                        id_a_editar = st.selectbox("Seleccionar ID a Editar", ids_pedidos, key="edit_ped_sel")
+                        if id_a_editar:
+                            ped_data = next((p for p in todos_pedidos if str(p['id']) == id_a_editar), None)
+                            with st.form("form_edit_ped"):
+                                nuevo_estado = st.selectbox("Estado", ["Pendiente", "En Producción", "Finalizado"], index=["Pendiente", "En Producción", "Finalizado"].index(ped_data.get('estado', 'Pendiente')))
+                                nueva_cant = st.number_input("Cantidad", value=int(ped_data.get('cantidad', 1)))
+                                if st.form_submit_button("Guardar Cambios"):
+                                    supabase.table("pedidos_produccion").update({"estado": nuevo_estado, "cantidad": nueva_cant}).eq("id", int(id_a_editar)).execute()
+                                    registrar_movimiento(st.session_state.user, "Editó Pedido", f"ID {id_a_editar} modificado")
+                                    st.success("Actualizado.")
+                                    st.rerun()
+                
+                with col_del_ped:
+                    with st.expander("🗑️ Eliminar Pedido"):
+                        id_a_borrar = st.selectbox("Seleccionar ID a Eliminar", ids_pedidos, key="del_ped_sel")
+                        if st.button("Eliminar Orden Seleccionada", type="primary", use_container_width=True):
+                            supabase.table("pedidos_produccion").delete().eq("id", int(id_a_borrar)).execute()
+                            registrar_movimiento(st.session_state.user, "Eliminó Pedido", f"Se eliminó la orden ID {id_a_borrar}")
+                            st.success("Orden eliminada.")
+                            st.rerun()
+        else:
+            st.info("No hay pedidos cargados.")
 
     # ==========================================
     # 2. PESTAÑA MATERIAS PRIMAS
@@ -262,7 +303,6 @@ else:
         if lista_mp:
             st.dataframe(pd.DataFrame(lista_mp), use_container_width=True)
             
-            # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
             if es_administrador():
                 st.markdown("### ⚙️ Administrar Materias Primas (Solo Admin)")
                 col_edit_mp, col_del_mp = st.columns(2)
@@ -396,7 +436,6 @@ else:
                 
             st.dataframe(df_prods_filtrado, use_container_width=True)
             
-            # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
             if es_administrador():
                 st.markdown("### ⚙️ Administrar Productos (Solo Admin)")
                 col_edit_prod, col_del_prod = st.columns(2)
@@ -452,7 +491,18 @@ else:
                 prod_venta = st.selectbox("Seleccionar Producto", nombres_productos)
                 cant_venta = st.number_input("Cantidad retirada o vendida", min_value=1, value=1)
                 
-                if st.form_submit_button("Confirmar Salida", use_container_width=True):
+                if st.form_submit_button("Confirmar Salida (Descuenta Stock)", use_container_width=True):
+                    # 1. DESCONTAR DEL STOCK PRIMERO
+                    try:
+                        prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_venta).execute().data
+                        if prod_db:
+                            stock_actual = float(prod_db[0].get("cantidad") or 0)
+                            nuevo_stock = stock_actual - cant_venta
+                            supabase.table("productos").update({"cantidad": nuevo_stock}).eq("nombre", prod_venta).execute()
+                    except Exception as e:
+                        pass
+                    
+                    # 2. REGISTRAR LA VENTA
                     venta_data = {
                         "producto": prod_venta,
                         "cantidad": cant_venta,
@@ -460,12 +510,13 @@ else:
                         "fecha": str(datetime.now().date())
                     }
                     supabase.table("ventas_historial").insert(venta_data).execute()
-                    registrar_movimiento(st.session_state.user, "Registró Salida/Venta", f"Salida de {cant_venta}x {prod_venta}")
-                    st.success("¡Salida registrada con éxito!")
+                    
+                    registrar_movimiento(st.session_state.user, "Registró Salida/Venta", f"Salida de {cant_venta}x {prod_venta} (-{cant_venta} Stock)")
+                    st.success(f"¡Salida registrada con éxito y stock actualizado!")
                     st.rerun()
             else:
                 st.warning("⚠️ No hay productos disponibles para registrar salidas.")
-                st.form_submit_button("Confirmar Salida", disabled=True, use_container_width=True)
+                st.form_submit_button("Confirmar Salida (Descuenta Stock)", disabled=True, use_container_width=True)
 
         st.divider()
         st.subheader("Historial de Salidas Registradas")
@@ -474,7 +525,6 @@ else:
             if ventas:
                 st.dataframe(pd.DataFrame(ventas), use_container_width=True)
                 
-                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR
                 if es_administrador():
                     st.markdown("### ⚙️ Administrar Ventas (Solo Admin)")
                     col_edit_venta, col_del_venta = st.columns(2)
@@ -535,18 +585,42 @@ else:
                     use_container_width=True
                 )
                 
-                # ZONA SOLO VISIBLE PARA EL ADMINISTRADOR (Para borrar registros erróneos)
                 if es_administrador():
                     st.divider()
                     st.markdown("### ⚙️ Administrar Registros de Auditoría (Solo Admin)")
-                    with st.expander("🗑️ Eliminar Registro del Historial"):
-                        ids_regs = [str(r['id']) for r in regs] if 'id' in regs[0] else []
-                        if ids_regs:
-                            reg_a_borrar = st.selectbox("Seleccionar ID de Registro a Eliminar", ids_regs, key="del_reg_sel")
-                            if st.button("Eliminar Registro Definitivamente", type="primary", use_container_width=True):
-                                supabase.table("registros").delete().eq("id", int(reg_a_borrar)).execute()
-                                st.success(f"Registro ID {reg_a_borrar} eliminado.")
-                                st.rerun()
+                    col_edit_reg, col_del_reg = st.columns(2)
+                    ids_regs = [str(r['id']) for r in regs] if 'id' in regs[0] else []
+                    
+                    if ids_regs:
+                        with col_edit_reg:
+                            with st.expander("✏️ Editar Registro"):
+                                reg_a_editar = st.selectbox("Seleccionar ID a Editar", ids_regs, key="edit_reg_sel")
+                                if reg_a_editar:
+                                    datos_reg = next((r for r in regs if str(r['id']) == reg_a_editar), None)
+                                    with st.form("form_edit_reg"):
+                                        nuevo_usuario = st.text_input("Usuario", value=datos_reg.get('usuario', ''))
+                                        nueva_accion = st.text_input("Acción", value=datos_reg.get('accion', ''))
+                                        nuevo_detalle = st.text_area("Detalle", value=datos_reg.get('detalle', ''))
+                                        nueva_fecha = st.text_input("Fecha y Hora", value=datos_reg.get('fecha_hora', ''))
+                                        
+                                        if st.form_submit_button("Guardar Cambios"):
+                                            upd_reg = {
+                                                "usuario": nuevo_usuario,
+                                                "accion": nueva_accion,
+                                                "detalle": nuevo_detalle,
+                                                "fecha_hora": nueva_fecha
+                                            }
+                                            supabase.table("registros").update(upd_reg).eq("id", int(reg_a_editar)).execute()
+                                            st.success("Registro de auditoría actualizado.")
+                                            st.rerun()
+
+                        with col_del_reg:
+                            with st.expander("🗑️ Eliminar Registro"):
+                                reg_a_borrar = st.selectbox("Seleccionar ID de Registro a Eliminar", ids_regs, key="del_reg_sel")
+                                if st.button("Eliminar Definitivamente", type="primary", use_container_width=True):
+                                    supabase.table("registros").delete().eq("id", int(reg_a_borrar)).execute()
+                                    st.success(f"Registro ID {reg_a_borrar} eliminado.")
+                                    st.rerun()
             else:
                 st.info("Aún no hay registros de auditoría.")
         except Exception as e:
