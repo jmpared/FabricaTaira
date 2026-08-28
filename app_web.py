@@ -41,7 +41,6 @@ def registrar_movimiento(usuario, accion, detalle):
 def es_administrador():
     correo = st.session_state.get("email_user", "").strip().lower()
     usuario = st.session_state.get("user", "").strip().lower()
-    # Ahora detecta tus dos correos o variantes de tu nombre para asegurar que veas el panel
     correos_admin = ["mininpared@gmail.com", "eleminino.pared@gmail.com"]
     return (correo in correos_admin) or ("minin" in correo) or ("mini" in usuario)
 
@@ -196,19 +195,16 @@ else:
                             pedido = next((p for p in en_produccion if p['id'] == id_ped), None)
                             
                             if pedido:
-                                # 1. Actualizar estado del pedido a finalizado
                                 update_fin = {
                                     "estado": "Finalizado",
                                     "fecha_finalizacion": str(datetime.now().date())
                                 }
                                 supabase.table("pedidos_produccion").update(update_fin).eq("id", id_ped).execute()
                                 
-                                # 2. SUMAR AL INVENTARIO DE PRODUCTOS
                                 prod_nombre = pedido['producto']
                                 cant_fabricada = float(pedido['cantidad'])
                                 
                                 try:
-                                    # Traemos la cantidad actual directamente de la DB para ser precisos
                                     prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_nombre).execute().data
                                     if prod_db:
                                         stock_actual = float(prod_db[0].get("cantidad") or 0)
@@ -242,8 +238,15 @@ else:
                         if id_a_editar:
                             ped_data = next((p for p in todos_pedidos if str(p['id']) == id_a_editar), None)
                             with st.form("form_edit_ped"):
-                                nuevo_estado = st.selectbox("Estado", ["Pendiente", "En Producción", "Finalizado"], index=["Pendiente", "En Producción", "Finalizado"].index(ped_data.get('estado', 'Pendiente')))
+                                # ---- AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR VALUE ERROR ----
+                                estado_db = ped_data.get('estado', 'Pendiente')
+                                opciones_est = ["Pendiente", "En Producción", "Finalizado"]
+                                # Si el estado no coincide exactamente, asignamos 0 (Pendiente) por seguridad
+                                idx_est = opciones_est.index(estado_db) if estado_db in opciones_est else 0
+                                
+                                nuevo_estado = st.selectbox("Estado", opciones_est, index=idx_est)
                                 nueva_cant = st.number_input("Cantidad", value=int(ped_data.get('cantidad', 1)))
+                                
                                 if st.form_submit_button("Guardar Cambios"):
                                     supabase.table("pedidos_produccion").update({"estado": nuevo_estado, "cantidad": nueva_cant}).eq("id", int(id_a_editar)).execute()
                                     registrar_movimiento(st.session_state.user, "Editó Pedido", f"ID {id_a_editar} modificado")
@@ -492,7 +495,6 @@ else:
                 cant_venta = st.number_input("Cantidad retirada o vendida", min_value=1, value=1)
                 
                 if st.form_submit_button("Confirmar Salida (Descuenta Stock)", use_container_width=True):
-                    # 1. DESCONTAR DEL STOCK PRIMERO
                     try:
                         prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_venta).execute().data
                         if prod_db:
@@ -502,7 +504,6 @@ else:
                     except Exception as e:
                         pass
                     
-                    # 2. REGISTRAR LA VENTA
                     venta_data = {
                         "producto": prod_venta,
                         "cantidad": cant_venta,
