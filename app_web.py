@@ -103,14 +103,15 @@ else:
 
     verificar_alertas_flotantes(lista_mp, lista_productos)
 
-    # LAS 6 PESTAÑAS
-    tab_prod, tab_mp, tab_stock, tab_ventas, tab_registros, tab_alertas = st.tabs([
+    # LAS 7 PESTAÑAS (Agregamos Estadísticas)
+    tab_prod, tab_mp, tab_stock, tab_ventas, tab_registros, tab_alertas, tab_stats = st.tabs([
         "📋 Producción", 
         "🧪 Materias Primas", 
         "🛠️ Productos y Stock", 
         "📈 Ventas",
         "📜 Registros",
-        "⚠️ Alertas"
+        "⚠️ Alertas",
+        "📊 Estadísticas"
     ])
 
     # ==========================================
@@ -238,10 +239,8 @@ else:
                         if id_a_editar:
                             ped_data = next((p for p in todos_pedidos if str(p['id']) == id_a_editar), None)
                             with st.form("form_edit_ped"):
-                                # ---- AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR VALUE ERROR ----
                                 estado_db = ped_data.get('estado', 'Pendiente')
                                 opciones_est = ["Pendiente", "En Producción", "Finalizado"]
-                                # Si el estado no coincide exactamente, asignamos 0 (Pendiente) por seguridad
                                 idx_est = opciones_est.index(estado_db) if estado_db in opciones_est else 0
                                 
                                 nuevo_estado = st.selectbox("Estado", opciones_est, index=idx_est)
@@ -652,3 +651,75 @@ else:
                 
         if not hay_alertas:
             st.success("✅ Todo el inventario se encuentra en niveles óptimos.")
+
+    # ==========================================
+    # 7. PESTAÑA ESTADÍSTICAS Y BALANCE
+    # ==========================================
+    with tab_stats:
+        st.header("📊 Balance y Estadísticas de Producción")
+        
+        try:
+            pedidos_stats = supabase.table("pedidos_produccion").select("*").execute().data
+        except Exception as e:
+            pedidos_stats = []
+
+        if pedidos_stats:
+            df_stats = pd.DataFrame(pedidos_stats)
+            # Solo analizamos la producción que ya fue "Finalizada"
+            df_fin = df_stats[df_stats['estado'] == 'Finalizado'].copy()
+
+            if not df_fin.empty:
+                # Aseguramos formato de fecha y forzamos a número
+                df_fin['fecha_finalizacion'] = pd.to_datetime(df_fin['fecha_finalizacion']).dt.date
+                df_fin['cantidad'] = pd.to_numeric(df_fin['cantidad'])
+                
+                st.subheader("Filtros de Búsqueda")
+                col_filt_1, col_filt_2 = st.columns(2)
+                
+                with col_filt_1:
+                    productos_unicos = ["Todos los productos"] + list(df_fin['producto'].unique())
+                    filtro_prod = st.selectbox("Filtrar por Producto:", productos_unicos)
+                    
+                with col_filt_2:
+                    filtro_tiempo = st.selectbox("Agrupación de Tiempo:", ["Diaria", "Semanal", "Mensual"], index=1)
+
+                # Aplicar filtro de producto
+                if filtro_prod != "Todos los productos":
+                    df_fin = df_fin[df_fin['producto'] == filtro_prod]
+
+                if not df_fin.empty:
+                    # Agrupación según selección
+                    if filtro_tiempo == "Diaria":
+                        df_agrupado = df_fin.groupby(['fecha_finalizacion', 'producto'])['cantidad'].sum().reset_index()
+                        columna_fecha = 'fecha_finalizacion'
+                    elif filtro_tiempo == "Semanal":
+                        df_fin['Semana'] = pd.to_datetime(df_fin['fecha_finalizacion']).dt.isocalendar().week
+                        df_fin['Año'] = pd.to_datetime(df_fin['fecha_finalizacion']).dt.isocalendar().year
+                        df_fin['Periodo'] = df_fin['Año'].astype(str) + " - Semana " + df_fin['Semana'].astype(str)
+                        df_agrupado = df_fin.groupby(['Periodo', 'producto'])['cantidad'].sum().reset_index()
+                        columna_fecha = 'Periodo'
+                    else: # Mensual
+                        df_fin['Mes'] = pd.to_datetime(df_fin['fecha_finalizacion']).dt.to_period('M').astype(str)
+                        df_agrupado = df_fin.groupby(['Mes', 'producto'])['cantidad'].sum().reset_index()
+                        columna_fecha = 'Mes'
+
+                    # Adaptar datos para el gráfico nativo de barras
+                    df_pivot = df_agrupado.pivot(index=columna_fecha, columns='producto', values='cantidad').fillna(0)
+
+                    st.markdown("### 📈 Producción a lo largo del tiempo")
+                    st.bar_chart(df_pivot, use_container_width=True)
+
+                    st.markdown("### 🎯 Resumen de Totales Producidos")
+                    totales = df_agrupado.groupby('producto')['cantidad'].sum().reset_index()
+                    
+                    # Generar tarjetas de métricas visuales
+                    cols_metricas = st.columns(min(len(totales), 4))
+                    for i, row in totales.iterrows():
+                        with cols_metricas[i % 4]:
+                            st.metric(label=row['producto'], value=f"{int(row['cantidad'])} un.")
+                else:
+                    st.info("No hay datos de producción finalizada para este producto específico.")
+            else:
+                st.info("Aún no hay lotes de producción marcados como 'Finalizados' para generar el balance.")
+        else:
+            st.info("No hay datos de pedidos registrados para analizar.")
