@@ -16,13 +16,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- VARIABLES DE SESIÓN ---
+# --- VARIABLES DE SESIÓN (Y TOKENS DE SEGURIDAD PARA RLS) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
+if "access_token" not in st.session_state:
+    st.session_state.access_token = None
+if "refresh_token" not in st.session_state:
+    st.session_state.refresh_token = None
 if "receta_temp" not in st.session_state:
     st.session_state.receta_temp = []
 if "categorias_colores" not in st.session_state:
     st.session_state.categorias_colores = {}
+
+# --- RESTAURAR SESIÓN EN SUPABASE PARA PASAR EL RLS ---
+# Esto evita que Streamlit se olvide de que estamos logueados al recargar la página
+if st.session_state.get("access_token") and st.session_state.get("refresh_token"):
+    try:
+        supabase.auth.set_session(st.session_state.access_token, st.session_state.refresh_token)
+    except Exception:
+        pass
 
 # --- FUNCIÓN DE AUDITORÍA ---
 def registrar_movimiento(usuario, accion, detalle):
@@ -37,14 +49,21 @@ def registrar_movimiento(usuario, accion, detalle):
     except Exception as e:
         pass
 
-# --- VALIDACIÓN DE ADMINISTRADOR MEJORADA ---
+# --- VALIDACIÓN DE ADMINISTRADOR ---
 def es_administrador():
     correo = st.session_state.get("email_user", "").strip().lower()
     usuario = st.session_state.get("user", "").strip().lower()
     correos_admin = ["mininpared@gmail.com", "eleminino.pared@gmail.com"]
     return (correo in correos_admin) or ("minin" in correo) or ("mini" in usuario)
 
-# --- NOTIFICACIONES FLOTANTES (TOAST) ---
+# --- GENERADOR DE COLOR ---
+def obtener_color_categoria(categoria):
+    if categoria not in st.session_state.categorias_colores:
+        colores = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC3", "#BAE1FF", "#E8BAFF", "#FFBABE"]
+        st.session_state.categorias_colores[categoria] = random.choice(colores)
+    return st.session_state.categorias_colores[categoria]
+
+# --- NOTIFICACIONES FLOTANTES ---
 def verificar_alertas_flotantes(lista_mp, lista_productos):
     for mp in lista_mp:
         cant_actual = float(mp.get('cantidad') or mp.get('longitud') or 0)
@@ -65,13 +84,19 @@ if not st.session_state.autenticado:
     password = st.text_input("Contraseña", type="password")
     if st.button("Ingresar", use_container_width=True):
         try:
-            supabase.auth.sign_in_with_password({"email": email, "password": password})
+            # Login y captura del token seguro
+            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
             st.session_state.autenticado = True
             st.session_state.user = email.split('@')[0].capitalize()
             st.session_state.email_user = email.strip().lower()
+            
+            # Guardamos los tokens para mantener abierta la conexión segura con RLS
+            st.session_state.access_token = res.session.access_token
+            st.session_state.refresh_token = res.session.refresh_token
+            
             st.rerun()
         except Exception as e:
-            st.error("Usuario o contraseña incorrectos.")
+            st.error("Usuario o contraseña incorrectos. O asegúrate de haber creado el usuario en Supabase Auth.")
 else:
     # --- MENÚ LATERAL ---
     with st.sidebar:
@@ -82,6 +107,8 @@ else:
             st.session_state.autenticado = False
             st.session_state.pop("email_user", None)
             st.session_state.pop("user", None)
+            st.session_state.pop("access_token", None)
+            st.session_state.pop("refresh_token", None)
             st.rerun()
 
     st.title("📦 FÁBRICA TAIRA - Sistema Integral")
@@ -93,6 +120,7 @@ else:
     except Exception as e:
         lista_productos = []
         lista_mp = []
+        st.error(f"Error conectando a la base de datos (RLS o Red): {e}")
 
     verificar_alertas_flotantes(lista_mp, lista_productos)
 
@@ -656,7 +684,6 @@ else:
         except Exception as e:
             pedidos_stats = []
 
-        # CORRECCIÓN 1: Ahora toma la lista COMPLETA de tus productos creados en la base de datos
         nombres_todos_productos = ["Todos los productos"] + [p['nombre'] for p in lista_productos] if lista_productos else ["Todos los productos"]
 
         if pedidos_stats:
@@ -674,15 +701,12 @@ else:
                     filtro_prod = st.selectbox("Filtrar por Producto:", nombres_todos_productos)
                     
                 with col_filt_2:
-                    # CORRECCIÓN 2: Opciones de tiempo mucho más claras para ver la evolución
                     filtro_tiempo = st.selectbox("Ver evolución por:", ["Últimos 30 días (Día por Día)", "Histórico por Semanas", "Histórico por Meses"])
 
-                # Aplicar filtro de producto si se seleccionó uno específico
                 if filtro_prod != "Todos los productos":
                     df_fin = df_fin[df_fin['producto'] == filtro_prod]
 
                 if not df_fin.empty:
-                    # Agrupación según selección de tiempo
                     if filtro_tiempo == "Últimos 30 días (Día por Día)":
                         hace_30_dias = pd.Timestamp.now().normalize() - pd.Timedelta(days=30)
                         df_fin = df_fin[df_fin['fecha_finalizacion'] >= hace_30_dias]
@@ -695,19 +719,17 @@ else:
                         df_agrupado = df_fin.groupby(['Año-Semana', 'producto'])['cantidad'].sum().reset_index()
                         columna_fecha = 'Año-Semana'
                         
-                    else: # Histórico por Meses
+                    else:
                         df_fin['Año-Mes'] = df_fin['fecha_finalizacion'].dt.strftime('%Y-%m')
                         df_agrupado = df_fin.groupby(['Año-Mes', 'producto'])['cantidad'].sum().reset_index()
                         columna_fecha = 'Año-Mes'
 
                     if not df_agrupado.empty:
-                        # CORRECCIÓN 3: Preparar datos para gráfico multicolor automático
                         df_pivot = df_agrupado.pivot(index=columna_fecha, columns='producto', values='cantidad').fillna(0)
 
                         st.markdown("### 📈 Evolución de Producción")
                         st.caption("Cada color representa un producto distinto. Pasa el cursor por encima para ver detalles.")
                         
-                        # Gráfico de barras apiladas (Stacked Bar Chart)
                         st.bar_chart(df_pivot, use_container_width=True)
 
                         st.markdown("### 🎯 Total Fabricado (Según el filtro aplicado)")
