@@ -16,25 +16,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- VARIABLES DE SESIÓN (Y TOKENS DE SEGURIDAD PARA RLS) ---
+# --- VARIABLES DE SESIÓN Y TOKENS DE RLS ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 if "access_token" not in st.session_state:
     st.session_state.access_token = None
-if "refresh_token" not in st.session_state:
-    st.session_state.refresh_token = None
 if "receta_temp" not in st.session_state:
     st.session_state.receta_temp = []
 if "categorias_colores" not in st.session_state:
     st.session_state.categorias_colores = {}
 
-# --- RESTAURAR SESIÓN EN SUPABASE PARA PASAR EL RLS ---
-# Esto evita que Streamlit se olvide de que estamos logueados al recargar la página
-if st.session_state.get("access_token") and st.session_state.get("refresh_token"):
-    try:
-        supabase.auth.set_session(st.session_state.access_token, st.session_state.refresh_token)
-    except Exception:
-        pass
+# --- INYECTAR TOKEN DE SEGURIDAD PARA PASAR EL RLS ---
+# Esto asegura que la base de datos no nos bloquee al recargar la página
+if st.session_state.get("access_token"):
+    supabase.postgrest.auth(st.session_state.access_token)
 
 # --- FUNCIÓN DE AUDITORÍA ---
 def registrar_movimiento(usuario, accion, detalle):
@@ -56,14 +51,14 @@ def es_administrador():
     correos_admin = ["mininpared@gmail.com", "eleminino.pared@gmail.com"]
     return (correo in correos_admin) or ("minin" in correo) or ("mini" in usuario)
 
-# --- GENERADOR DE COLOR ---
+# --- GENERADOR DE COLORES PARA GRÁFICOS Y CATEGORÍAS ---
 def obtener_color_categoria(categoria):
     if categoria not in st.session_state.categorias_colores:
         colores = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC3", "#BAE1FF", "#E8BAFF", "#FFBABE"]
         st.session_state.categorias_colores[categoria] = random.choice(colores)
     return st.session_state.categorias_colores[categoria]
 
-# --- NOTIFICACIONES FLOTANTES ---
+# --- NOTIFICACIONES FLOTANTES DE STOCK BAJO ---
 def verificar_alertas_flotantes(lista_mp, lista_productos):
     for mp in lista_mp:
         cant_actual = float(mp.get('cantidad') or mp.get('longitud') or 0)
@@ -84,19 +79,15 @@ if not st.session_state.autenticado:
     password = st.text_input("Contraseña", type="password")
     if st.button("Ingresar", use_container_width=True):
         try:
-            # Login y captura del token seguro
             res = supabase.auth.sign_in_with_password({"email": email, "password": password})
             st.session_state.autenticado = True
             st.session_state.user = email.split('@')[0].capitalize()
             st.session_state.email_user = email.strip().lower()
-            
-            # Guardamos los tokens para mantener abierta la conexión segura con RLS
+            # Guardar el token de seguridad
             st.session_state.access_token = res.session.access_token
-            st.session_state.refresh_token = res.session.refresh_token
-            
             st.rerun()
         except Exception as e:
-            st.error("Usuario o contraseña incorrectos. O asegúrate de haber creado el usuario en Supabase Auth.")
+            st.error("Usuario o contraseña incorrectos.")
 else:
     # --- MENÚ LATERAL ---
     with st.sidebar:
@@ -108,19 +99,20 @@ else:
             st.session_state.pop("email_user", None)
             st.session_state.pop("user", None)
             st.session_state.pop("access_token", None)
-            st.session_state.pop("refresh_token", None)
             st.rerun()
 
     st.title("📦 FÁBRICA TAIRA - Sistema Integral")
     
-    # OBTENER DATOS BASE
+    # OBTENER DATOS BASE CON CONTROL DE ERRORES RLS
     try:
         lista_productos = supabase.table("productos").select("*").order("nombre").execute().data
         lista_mp = supabase.table("materias_primas").select("*").execute().data
+        st.sidebar.success("🟢 Base de Datos conectada")
     except Exception as e:
         lista_productos = []
         lista_mp = []
-        st.error(f"Error conectando a la base de datos (RLS o Red): {e}")
+        st.sidebar.error("🔴 Bloqueo de RLS o error de red.")
+        st.error(f"Detalle técnico del bloqueo: {e}")
 
     verificar_alertas_flotantes(lista_mp, lista_productos)
 
