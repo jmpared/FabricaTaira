@@ -84,6 +84,39 @@ def ajustar_stock(producto, delta):
     except Exception as e:
         return False, f"Error al actualizar el stock de '{producto}': {e}"
 
+# --- DESCUENTO DE MATERIAS PRIMAS POR RECETA ---
+# --- AVISOS QUE SOBREVIVEN AL st.rerun() ---
+def avisar(tipo, mensaje):
+    st.session_state.setdefault("avisos_pendientes", []).append((tipo, mensaje))
+
+def mostrar_avisos_pendientes():
+    for tipo, mensaje in st.session_state.pop("avisos_pendientes", []):
+        getattr(st, tipo)(mensaje)
+
+def descontar_insumos_lote(producto, unidades):
+    """Descuenta de materias primas lo que usa la receta × unidades fabricadas.
+    Muestra el detalle y avisa si algo quedó bajo el mínimo. Devuelve True si no hubo errores."""
+    try:
+        detalle = supabase.rpc("descontar_insumos", {"p_producto": producto, "p_unidades": unidades}).execute().data or []
+    except Exception as e:
+        avisar("error", f"Se sumó el stock de '{producto}', pero NO se pudieron descontar los insumos: {e}")
+        return False
+    usados = []
+    for d in detalle:
+        if d.get("aviso"):
+            avisar("warning", f"'{producto}': {d.get('material', '')} {d['aviso']}".strip())
+            continue
+        unidad = "cm" if d.get("unidad") == "cm" else "u."
+        usados.append(f"{d['usado']:g} {unidad} de {d['material']}")
+        if d.get("negativo"):
+            avisar("error", f"⚠️ {d['material']} quedó en negativo ({d['queda']:g} {unidad}). Revisá el stock real de ese insumo.")
+        elif d.get("bajo"):
+            avisar("warning", f"⚠️ Queda poco {d['material']}: {d['queda']:g} {unidad} (mínimo {d['minimo']:g}).")
+    if usados:
+        avisar("info", f"🧪 Insumos descontados por {unidades:g}x {producto}: " + ", ".join(usados))
+        registrar_movimiento(st.session_state.user, "Descuento de insumos", f"{unidades:g}x {producto}: " + ", ".join(usados))
+    return True
+
 # --- GENERADOR DE COLORES PARA GRÁFICOS Y CATEGORÍAS ---
 def obtener_color_categoria(categoria):
     if categoria not in st.session_state.categorias_colores:
@@ -166,6 +199,7 @@ else:
     # ==========================================
     with tab_prod:
         st.header("Control de Producción y Ciclos")
+        mostrar_avisos_pendientes()
         st.write(f"Operario actual: **{st.session_state.user}**")
         
         try:
@@ -263,6 +297,10 @@ else:
                                 finalizados += 1
 
                                 registrar_movimiento(st.session_state.user, "Producto Terminado", f"Finalizó lote ID {id_ped} (+{cant_fabricada} {prod_nombre})")
+
+                                # Descontar las materias primas según la receta
+                                if not descontar_insumos_lote(prod_nombre, cant_fabricada):
+                                    hubo_errores = True
 
                         if finalizados:
                             st.success(f"¡Se finalizaron {finalizados} órdenes y se ACTUALIZÓ el stock!")
