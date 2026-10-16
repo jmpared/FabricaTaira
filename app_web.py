@@ -1,3 +1,5 @@
+import json
+import random
 import streamlit as st
 from supabase import create_client
 import pandas as pd
@@ -42,14 +44,44 @@ def registrar_movimiento(usuario, accion, detalle):
         }
         supabase.table("registros").insert(nuevo_registro).execute()
     except Exception as e:
-        pass
+        st.warning(f"No se pudo guardar el registro de auditoría: {e}")
 
 # --- VALIDACIÓN DE ADMINISTRADOR ---
 def es_administrador():
     correo = st.session_state.get("email_user", "").strip().lower()
     usuario = st.session_state.get("user", "").strip().lower()
-    correos_admin = ["mininpared@gmail.com", "eleminino.pared@gmail.com"]
-    return (correo in correos_admin) or ("minin" in correo) or ("mini" in usuario)
+    correos_admin = ["mininopared@gmail.com", "eleminino.pared@gmail.com"]
+    return correo in correos_admin
+
+
+# --- AJUSTE DE STOCK SEGURO ---
+def ajustar_stock(producto, delta):
+    """Suma (delta > 0) o resta (delta < 0) stock de un producto.
+    - No permite que el stock quede en negativo.
+    - Solo guarda si el stock no cambió desde que se leyó (evita pisar a otro operario).
+    Devuelve (ok, mensaje)."""
+    try:
+        for _ in range(3):
+            fila = supabase.table("productos").select("cantidad").eq("nombre", producto).execute().data
+            if not fila:
+                return False, f"No se encontró el producto '{producto}'."
+            valor_leido = fila[0].get("cantidad")
+            actual = float(valor_leido or 0)
+            nuevo = actual + delta
+            if nuevo < 0:
+                return False, f"Stock insuficiente de '{producto}': hay {actual:g} y se piden {abs(delta):g}."
+            res = (
+                supabase.table("productos")
+                .update({"cantidad": nuevo})
+                .eq("nombre", producto)
+                .eq("cantidad", valor_leido)
+                .execute()
+            )
+            if res.data:
+                return True, f"Stock de '{producto}': {actual:g} → {nuevo:g}"
+        return False, f"El stock de '{producto}' cambió mientras se guardaba. Probá de nuevo."
+    except Exception as e:
+        return False, f"Error al actualizar el stock de '{producto}': {e}"
 
 # --- GENERADOR DE COLORES PARA GRÁFICOS Y CATEGORÍAS ---
 def obtener_color_categoria(categoria):
@@ -204,33 +236,36 @@ else:
                 
                 if st.button("Finalizar Seleccionadas", use_container_width=True, type="primary"):
                     if seleccion_fin:
+                        finalizados = 0
+                        hubo_errores = False
                         for sel in seleccion_fin:
                             id_ped = opciones_prod[sel]
                             pedido = next((p for p in en_produccion if p['id'] == id_ped), None)
-                            
+
                             if pedido:
+                                prod_nombre = pedido['producto']
+                                cant_fabricada = float(pedido['cantidad'])
+
+                                # Primero se suma el stock; si falla, la orden NO se marca como finalizada
+                                ok, msg = ajustar_stock(prod_nombre, cant_fabricada)
+                                if not ok:
+                                    hubo_errores = True
+                                    st.error(f"No se finalizó el lote ID {id_ped}: {msg}")
+                                    continue
+
                                 update_fin = {
                                     "estado": "Finalizado",
                                     "fecha_finalizacion": str(datetime.now().date())
                                 }
                                 supabase.table("pedidos_produccion").update(update_fin).eq("id", id_ped).execute()
-                                
-                                prod_nombre = pedido['producto']
-                                cant_fabricada = float(pedido['cantidad'])
-                                
-                                try:
-                                    prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_nombre).execute().data
-                                    if prod_db:
-                                        stock_actual = float(prod_db[0].get("cantidad") or 0)
-                                        nuevo_stock = stock_actual + cant_fabricada
-                                        supabase.table("productos").update({"cantidad": nuevo_stock}).eq("nombre", prod_nombre).execute()
-                                except Exception as e:
-                                    pass
+                                finalizados += 1
 
                                 registrar_movimiento(st.session_state.user, "Producto Terminado", f"Finalizó lote ID {id_ped} (+{cant_fabricada} {prod_nombre})")
-                                
-                        st.success(f"¡Se finalizaron {len(seleccion_fin)} órdenes y se ACTUALIZÓ el stock!")
-                        st.rerun()
+
+                        if finalizados:
+                            st.success(f"¡Se finalizaron {finalizados} órdenes y se ACTUALIZÓ el stock!")
+                        if not hubo_errores:
+                            st.rerun()
                     else:
                         st.warning("Selecciona al menos una orden.")
             else:
@@ -507,26 +542,21 @@ else:
                 cant_venta = st.number_input("Cantidad retirada o vendida", min_value=1, value=1)
                 
                 if st.form_submit_button("Confirmar Salida (Descuenta Stock)", use_container_width=True):
-                    try:
-                        prod_db = supabase.table("productos").select("cantidad").eq("nombre", prod_venta).execute().data
-                        if prod_db:
-                            stock_actual = float(prod_db[0].get("cantidad") or 0)
-                            nuevo_stock = stock_actual - cant_venta
-                            supabase.table("productos").update({"cantidad": nuevo_stock}).eq("nombre", prod_venta).execute()
-                    except Exception as e:
-                        pass
-                    
-                    venta_data = {
-                        "producto": prod_venta,
-                        "cantidad": cant_venta,
-                        "registrado_por": st.session_state.user,
-                        "fecha": str(datetime.now().date())
-                    }
-                    supabase.table("ventas_historial").insert(venta_data).execute()
-                    
-                    registrar_movimiento(st.session_state.user, "Registró Salida/Venta", f"Salida de {cant_venta}x {prod_venta} (-{cant_venta} Stock)")
-                    st.success(f"¡Salida registrada con éxito y stock actualizado!")
-                    st.rerun()
+                    ok, msg = ajustar_stock(prod_venta, -float(cant_venta))
+                    if not ok:
+                        st.error(f"No se registró la salida: {msg}")
+                    else:
+                        venta_data = {
+                            "producto": prod_venta,
+                            "cantidad": cant_venta,
+                            "registrado_por": st.session_state.user,
+                            "fecha": str(datetime.now().date())
+                        }
+                        supabase.table("ventas_historial").insert(venta_data).execute()
+
+                        registrar_movimiento(st.session_state.user, "Registró Salida/Venta", f"Salida de {cant_venta}x {prod_venta} (-{cant_venta} Stock)")
+                        st.success(f"¡Salida registrada con éxito! {msg}")
+                        st.rerun()
             else:
                 st.warning("⚠️ No hay productos disponibles para registrar salidas.")
                 st.form_submit_button("Confirmar Salida (Descuenta Stock)", disabled=True, use_container_width=True)
@@ -598,42 +628,7 @@ else:
                     use_container_width=True
                 )
                 
-                if es_administrador():
-                    st.divider()
-                    st.markdown("### ⚙️ Administrar Registros de Auditoría (Solo Admin)")
-                    col_edit_reg, col_del_reg = st.columns(2)
-                    ids_regs = [str(r['id']) for r in regs] if 'id' in regs[0] else []
-                    
-                    if ids_regs:
-                        with col_edit_reg:
-                            with st.expander("✏️ Editar Registro"):
-                                reg_a_editar = st.selectbox("Seleccionar ID a Editar", ids_regs, key="edit_reg_sel")
-                                if reg_a_editar:
-                                    datos_reg = next((r for r in regs if str(r['id']) == reg_a_editar), None)
-                                    with st.form("form_edit_reg"):
-                                        nuevo_usuario = st.text_input("Usuario", value=datos_reg.get('usuario', ''))
-                                        nueva_accion = st.text_input("Acción", value=datos_reg.get('accion', ''))
-                                        nuevo_detalle = st.text_area("Detalle", value=datos_reg.get('detalle', ''))
-                                        nueva_fecha = st.text_input("Fecha y Hora", value=datos_reg.get('fecha_hora', ''))
-                                        
-                                        if st.form_submit_button("Guardar Cambios"):
-                                            upd_reg = {
-                                                "usuario": nuevo_usuario,
-                                                "accion": nueva_accion,
-                                                "detalle": nuevo_detalle,
-                                                "fecha_hora": nueva_fecha
-                                            }
-                                            supabase.table("registros").update(upd_reg).eq("id", int(reg_a_editar)).execute()
-                                            st.success("Registro de auditoría actualizado.")
-                                            st.rerun()
-
-                        with col_del_reg:
-                            with st.expander("🗑️ Eliminar Registro"):
-                                reg_a_borrar = st.selectbox("Seleccionar ID de Registro a Eliminar", ids_regs, key="del_reg_sel")
-                                if st.button("Eliminar Definitivamente", type="primary", use_container_width=True):
-                                    supabase.table("registros").delete().eq("id", int(reg_a_borrar)).execute()
-                                    st.success(f"Registro ID {reg_a_borrar} eliminado.")
-                                    st.rerun()
+                st.caption("🔒 El historial de auditoría es de solo lectura: no se puede editar ni borrar desde la app.")
             else:
                 st.info("Aún no hay registros de auditoría.")
         except Exception as e:
