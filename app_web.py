@@ -4,6 +4,7 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 from datetime import datetime
+from precios import mostrar_pestana_precios
 
 # --- CONFIGURACIÓN ---
 # PEGA AQUÍ TUS DATOS REALES DE SUPABASE (Settings > API)
@@ -148,15 +149,16 @@ else:
 
     verificar_alertas_flotantes(lista_mp, lista_productos)
 
-    # LAS 7 PESTAÑAS
-    tab_prod, tab_mp, tab_stock, tab_ventas, tab_registros, tab_alertas, tab_stats = st.tabs([
-        "📋 Producción", 
-        "🧪 Materias Primas", 
-        "🛠️ Productos y Stock", 
+    # LAS 8 PESTAÑAS
+    tab_prod, tab_mp, tab_stock, tab_ventas, tab_registros, tab_alertas, tab_stats, tab_precios = st.tabs([
+        "📋 Producción",
+        "🧪 Materias Primas",
+        "🛠️ Productos y Stock",
         "📈 Ventas",
         "📜 Registros",
         "⚠️ Alertas",
-        "📊 Estadísticas"
+        "📊 Estadísticas",
+        "💲 Costos y Precios"
     ])
 
     # ==========================================
@@ -499,8 +501,8 @@ else:
                             with st.form("form_edit_prod"):
                                 nuevo_nombre = st.text_input("Nombre", value=datos_prod['nombre'])
                                 nueva_cat = st.text_input("Categoría", value=datos_prod.get('categoria', 'General'))
-                                nueva_cant = st.number_input("Cantidad", value=int(datos_prod.get('cantidad', 0)))
-                                nuevo_min = st.number_input("Mínimo", value=int(datos_prod.get('minimo', 0)))
+                                nueva_cant = st.number_input("Cantidad", value=int(float(datos_prod.get('cantidad') or 0)))
+                                nuevo_min = st.number_input("Mínimo", value=int(float(datos_prod.get('minimo') or 0)))
                                 if st.form_submit_button("Guardar Cambios"):
                                     upd_prod = {
                                         "nombre": nuevo_nombre,
@@ -734,3 +736,16 @@ else:
                 st.info("Aún no hay lotes de producción marcados como 'Finalizados' para generar el balance.")
         else:
             st.info("No hay datos de pedidos registrados para analizar.")
+
+    # ==========================================
+    # 8. PESTAÑA COSTOS Y PRECIOS
+    # ==========================================
+    with tab_precios:
+        mostrar_pestana_precios(
+            supabase,
+            lista_mp,
+            lista_productos,
+            st.session_state.user,
+            es_administrador(),
+            registrar_movimiento,
+        )
