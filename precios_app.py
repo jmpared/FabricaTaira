@@ -5,6 +5,7 @@ lo que se aprueba acá se ve al instante en los dos.
 Ningún cambio se publica directo: todo pasa por "propuestas" que el administrador aprueba.
 """
 import math
+import re
 import time
 from datetime import date, datetime, timedelta
 
@@ -157,105 +158,415 @@ def proponer(items, motivo):
 
 
 # ================================================================ páginas
+def filtro_linea(p, linea):
+    return linea == "Todas" or p.get("linea") == ("fabricado" if linea == "Fabricados" else "importado")
+
+
 def pagina_lista():
-    st.title("📋 Lista de precios")
+    st.title("📋 Precios")
     cat = catalogo()
     ult = ultimos_cambios()
     pend = sum(1 for p in cat if p.get("precio_propuesto") is not None)
     if pend:
-        st.info(f"Hay **{pend} precios propuestos** esperando aprobación.")
-        if st.button("Ir a revisar y aprobar →"):
+        a, b = st.columns([4, 1.3], vertical_alignment="center")
+        a.info(f"Hay **{pend} precios propuestos** esperando aprobación.")
+        if b.button("Revisar y aprobar →", use_container_width=True):
             st.switch_page(PAGINAS["aprobar"])
 
     f1, f2, f3 = st.columns([1.2, 2, 2])
-    linea = f1.selectbox("Línea", ["Todas", "Fabricados", "Importados"])
-    cats_all = sorted({p.get("categoria") or "" for p in cat if linea == "Todas" or p.get("linea") == ("fabricado" if linea == "Fabricados" else "importado")})
-    cats = f2.multiselect("Categorías", cats_all, placeholder="Todas")
-    busca = f3.text_input("Buscar", placeholder="Ej: collar pampa")
-    vis = [p for p in cat
-           if (linea == "Todas" or p.get("linea") == ("fabricado" if linea == "Fabricados" else "importado"))
-           and (not cats or p.get("categoria") in cats)
+    linea = f1.selectbox("Línea", ["Todas", "Fabricados", "Importados"], key="l_linea")
+    cats_all = sorted({p.get("categoria") or "" for p in cat if filtro_linea(p, linea)})
+    cats = f2.multiselect("Categorías", cats_all, placeholder="Todas", key="l_cats")
+    busca = f3.text_input("Buscar", placeholder="Ej: collar pampa", key="l_busca")
+    vis = [p for p in cat if filtro_linea(p, linea) and (not cats or p.get("categoria") in cats)
            and (not busca or xl.normalizar(busca) in xl.normalizar(p["nombre"] + " " + (p.get("categoria") or "")))]
-
-    df = pd.DataFrame([{
-        "id": p["id"], "✔": False, "Producto": p["nombre"], "Categoría": p.get("categoria"), "Medida": medida(p),
-        "Precio actual": num(p.get("precio_publicado")), "Nuevo precio": None,
-        "Propuesto": num(p.get("precio_propuesto")),
-        "Últ. cambio": (fecha_local(ult.get(p["id"])).strftime("%d/%m/%Y") if ult.get(p["id"]) else "Carga inicial"),
-    } for p in vis])
-    st.caption(f"{len(vis)} productos en la lista" + (" · Escribí un precio en **Nuevo precio** o tildá ✔ para cambiar varios a la vez." if es_admin() else ""))
-    if df.empty:
+    if not vis:
         st.warning("No hay productos con esos filtros.")
         return
 
-    cfg = {"id": None,
-           "✔": st.column_config.CheckboxColumn("✔", width="small"),
-           "Precio actual": st.column_config.NumberColumn(format="$ %.2f"),
+    precios = [num(p.get("precio_publicado")) for p in vis if num(p.get("precio_publicado"))]
+    m = st.columns(4)
+    m[0].metric("Productos", len(vis))
+    m[1].metric("Precio promedio", pesos(sum(precios) / len(precios)) if precios else "—")
+    m[2].metric("Más barato", pesos(min(precios)) if precios else "—")
+    fechas = [ult[p["id"]] for p in vis if ult.get(p["id"])]
+    m[3].metric("Última actualización", fecha_local(max(fechas)).strftime("%d/%m/%Y") if fechas else "Carga inicial")
+
+    df = pd.DataFrame([{
+        "id": p["id"], "✔": p["id"] in ss.get("sel_ids", set()), "Producto": p["nombre"], "Categoría": p.get("categoria"),
+        "Medida": medida(p), "Precio": num(p.get("precio_publicado")), "Nuevo precio": None,
+        "En espera": num(p.get("precio_propuesto")),
+        "Últ. cambio": (fecha_local(ult.get(p["id"])).strftime("%d/%m/%Y") if ult.get(p["id"]) else "Carga inicial"),
+    } for p in vis])
+    cfg = {"id": None, "✔": st.column_config.CheckboxColumn("✔", width="small"),
+           "Precio": st.column_config.NumberColumn(format="$ %.2f"),
            "Nuevo precio": st.column_config.NumberColumn(format="$ %.2f", min_value=0.0, step=1.0),
-           "Propuesto": st.column_config.NumberColumn("En espera", format="$ %.2f")}
-    clave = "lista_" + str(abs(hash((linea, tuple(cats), busca))))
-    if es_admin():
-        ed = st.data_editor(df, key=clave, hide_index=True, use_container_width=True, height=460, column_config=cfg,
-                            disabled=["id", "Producto", "Categoría", "Medida", "Precio actual", "Propuesto", "Últ. cambio"])
-    else:
-        st.dataframe(df.drop(columns=["✔", "Nuevo precio"]), hide_index=True, use_container_width=True, height=460, column_config=cfg)
-        ed = df
-
-    hoy = datetime.now().strftime("%d/%m/%Y")
-    exp = df.drop(columns=["✔", "Nuevo precio", "Propuesto"]).rename(columns={"id": "ID TAIRA"})
-    exp.insert(3, "Línea", [("Fabricado" if p.get("linea") == "fabricado" else "Importado") for p in vis])
-    st.download_button("📥 Descargar esta lista en Excel", xl.excel_lista(exp, hoy),
-                       file_name=f"precios_taira_{date.today():%Y-%m-%d}.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
+           "En espera": st.column_config.NumberColumn(format="$ %.2f")}
     if not es_admin():
-        st.caption("🔒 Solo el administrador puede cambiar precios.")
+        st.dataframe(df.drop(columns=["✔", "Nuevo precio"]), hide_index=True, use_container_width=True, height=520, column_config=cfg)
+        st.caption("🔒 Solo el administrador puede cambiar precios. Para descargar la lista, andá a **Exportar Excel**.")
         return
+    st.caption("✏️ Escribí en **Nuevo precio** para cambiar uno por uno · ✔ tildá para usar una herramienta con varios a la vez.")
+    clave = "lista_" + str(abs(hash((linea, tuple(cats), busca))))
+    ed = st.data_editor(df, key=clave, hide_index=True, use_container_width=True, height=520, column_config=cfg,
+                        disabled=["id", "Producto", "Categoría", "Medida", "Precio", "En espera", "Últ. cambio"])
+    visibles = set(df["id"])
+    ss.sel_ids = (set(ss.get("sel_ids", set())) - visibles) | set(ed.loc[ed["✔"], "id"])
 
     escritos = ed[ed["Nuevo precio"].map(num).notna() & (ed["Nuevo precio"].map(num) > 0)]
-    if len(escritos):
-        st.success(f"Escribiste {len(escritos)} precios nuevos.")
-        if st.button(f"💾 Proponer estos {len(escritos)} precios", type="primary"):
-            proponer([(r["id"], num(r["Nuevo precio"])) for _, r in escritos.iterrows()], "Cambio individual")
-            st.rerun()
+    a, b = st.columns(2)
+    if a.button(f"💾 Proponer {len(escritos)} precios escritos", type="primary", disabled=escritos.empty, use_container_width=True):
+        proponer([(r["id"], num(r["Nuevo precio"])) for _, r in escritos.iterrows()], "Cambio individual")
+        st.rerun()
+    n_sel = len(ss.sel_ids)
+    if b.button(f"🧰 Usar una herramienta con los {n_sel} tildados", disabled=not n_sel, use_container_width=True):
+        ss["h_alcance"] = "Los tildados en Precios"
+        st.switch_page(PAGINAS["herramientas"])
 
-    st.divider()
-    st.subheader("Cambiar varios a la vez")
-    sel = ed[ed["✔"]]
-    c1, c2, c3, c4 = st.columns([1.6, 1.6, 1, 1])
-    alcance = c1.radio("¿A cuáles?", [f"Tildados ({len(sel)})", f"Todos los de la lista ({len(ed)})"],
-                       index=0 if len(sel) else 1, help="Para cambiar una categoría entera, filtrala arriba y elegí 'Todos los de la lista'.")
-    tipo = c2.radio("Cambio", ["Aumento / baja en %", "Sumar / restar $", "Precio fijo"])
-    valor = c3.number_input("Valor", value=10.0, step=1.0, help="Ej: 10 = +10%. Para bajar, poné un número negativo.")
-    paso = c4.selectbox("Redondear", [0, 10, 50, 100], index=1, format_func=lambda x: "No" if x == 0 else f"a ${x}")
-    filas = sel if alcance.startswith("Tildados") else ed
-    nuevos = []
-    for _, r in filas.iterrows():
-        act = num(r["Precio actual"])
-        if tipo.startswith("Precio fijo"):
-            n = valor
-        elif act is None:
+
+# ---------------------------------------------------------------- herramientas
+def elegir_productos(cat):
+    """Devuelve los productos a los que se aplica la herramienta."""
+    n_sel = len(ss.get("sel_ids", set()))
+    alc = st.radio("¿A qué productos?", ["Por filtro", "Los tildados en Precios"], horizontal=True, key="h_alcance",
+                   captions=["Línea, categoría, búsqueda, rango de precio", f"{n_sel} tildados"])
+    if alc.startswith("Los tildados"):
+        prods = [p for p in cat if p["id"] in ss.get("sel_ids", set())]
+        if not prods:
+            st.info("No hay productos tildados. Tildalos en **Precios** o usá el filtro.")
+        return prods, "selección"
+    c = st.columns([1.1, 2, 1.6])
+    linea = c[0].selectbox("Línea", ["Todas", "Fabricados", "Importados"], key="h_linea")
+    cats_all = sorted({p.get("categoria") or "" for p in cat if filtro_linea(p, linea)})
+    cats = c[1].multiselect("Categorías", cats_all, placeholder="Todas", key="h_cats")
+    busca = c[2].text_input("Nombre contiene", placeholder="Ej: T.3, pampa, comedero", key="h_busca")
+    d = st.columns([1, 1, 1.4])
+    pmin = d[0].number_input("Precio desde $", min_value=0.0, value=0.0, step=500.0, key="h_pmin")
+    pmax = d[1].number_input("Precio hasta $ (0 = sin tope)", min_value=0.0, value=0.0, step=500.0, key="h_pmax")
+    promo = d[2].selectbox("Promo 6+1", ["Todos", "Solo con promo", "Solo sin promo"], key="h_promo")
+    prods = []
+    for p in cat:
+        pr = num(p.get("precio_publicado"))
+        if not filtro_linea(p, linea) or (cats and p.get("categoria") not in cats):
             continue
-        elif tipo.startswith("Aumento"):
-            n = act * (1 + valor / 100)
+        if busca and xl.normalizar(busca) not in xl.normalizar(p["nombre"]):
+            continue
+        if pmin and (pr is None or pr < pmin) or pmax and (pr is None or pr > pmax):
+            continue
+        if promo == "Solo con promo" and not p.get("promo") or promo == "Solo sin promo" and p.get("promo"):
+            continue
+        prods.append(p)
+    partes = [linea.lower()] if linea != "Todas" else []
+    if cats:
+        partes.append(", ".join(cats))
+    if busca:
+        partes.append(f"'{busca}'")
+    if pmin or pmax:
+        partes.append(f"precios {pesos(pmin)}–{pesos(pmax) if pmax else '∞'}")
+    return prods, " · ".join(partes) or "todos"
+
+
+def redondeo_ui(key):
+    c = st.columns(2)
+    modo = c[0].selectbox("Redondeo", ["Sin redondeo", "Múltiplo de $10", "Múltiplo de $50", "Múltiplo de $100", "Múltiplo de $500",
+                                       "Terminar en 90", "Terminar en 99"], index=1, key=f"{key}_red")
+    sentido = c[1].selectbox("Hacia", ["Arriba", "El más cercano", "Abajo"], key=f"{key}_sent")
+    return modo, sentido
+
+
+def aplicar_redondeo(v, modo, sentido):
+    if v is None or modo == "Sin redondeo":
+        return round(v, 2) if v is not None else None
+    f = {"Arriba": math.ceil, "Abajo": math.floor}.get(sentido, round)
+    if modo.startswith("Múltiplo"):
+        paso = int(modo.split("$")[1])
+        return float(max(f(v / paso - (1e-9 if f is math.ceil else 0)) * paso, paso))
+    fin = 90 if modo.endswith("90") else 99
+    base = f((v - fin) / 100 - (1e-9 if f is math.ceil else 0)) * 100 + fin
+    return float(max(base, fin))
+
+
+def familia(nombre):
+    return re.sub(r"\s*(T\.\s*\d+|N°\s*\d+|[SML]|XL)\s*$", "", nombre.strip(), flags=re.I).strip()
+
+
+def pagina_herramientas():
+    st.title("🧰 Herramientas de precios")
+    if not es_admin():
+        st.info("🔒 Solo el administrador puede usar las herramientas que cambian precios. Las **Calculadoras** están disponibles para todos.")
+        return
+    cat = catalogo()
+    herramienta = st.selectbox("Herramienta", [
+        "📈 Aumento o baja en %",
+        "➕ Sumar o restar un monto",
+        "🎯 Poner un precio fijo",
+        "🪜 Aumento escalonado por rango de precio",
+        "📊 Ajuste por inflación acumulada",
+        "📏 Escalera de talles (familia de productos)",
+        "🔢 Solo redondear precios",
+        "↩️ Deshacer una actualización",
+    ], key="h_tool")
+    st.divider()
+
+    if herramienta.startswith("↩️"):
+        return herramienta_deshacer(cat)
+    if herramienta.startswith("📏"):
+        return herramienta_talles(cat)
+
+    prods, alcance_txt = elegir_productos(cat)
+    st.markdown("**Cambio a aplicar**")
+    if herramienta.startswith("📈"):
+        pct = st.number_input("Porcentaje (negativo para bajar)", value=10.0, step=0.5, key="h_pct")
+        calc = lambda a: a * (1 + pct / 100)
+        desc = f"{pct:+g}%"
+    elif herramienta.startswith("➕"):
+        monto = st.number_input("Monto en $ (negativo para restar)", value=500.0, step=50.0, key="h_monto")
+        calc = lambda a: a + monto
+        desc = f"{'+' if monto >= 0 else '−'}{pesos(abs(monto))}"
+    elif herramienta.startswith("🎯"):
+        fijo = st.number_input("Precio para todos los elegidos $", min_value=0.0, value=5000.0, step=100.0, key="h_fijo")
+        calc = lambda a: fijo
+        desc = f"fijo {pesos(fijo)}"
+    elif herramienta.startswith("🪜"):
+        st.caption("Ejemplo: los productos baratos suben más que los caros. Editá los tramos (hasta 0 = sin tope).")
+        tramos = st.data_editor(pd.DataFrame([{"Desde $": 0.0, "Hasta $": 5000.0, "Aumento %": 15.0},
+                                              {"Desde $": 5000.0, "Hasta $": 20000.0, "Aumento %": 10.0},
+                                              {"Desde $": 20000.0, "Hasta $": 0.0, "Aumento %": 8.0}]),
+                                num_rows="dynamic", hide_index=True, key="h_tramos", use_container_width=True)
+        tr = [(num(r["Desde $"]) or 0, num(r["Hasta $"]) or 0, num(r["Aumento %"]) or 0) for _, r in tramos.iterrows()]
+
+        def calc(a):
+            for d_, h_, p_ in tr:
+                if a >= d_ and (not h_ or a < h_):
+                    return a * (1 + p_ / 100)
+            return a
+        desc = "escalonado " + " / ".join(f"{p_:+g}%" for _, _, p_ in tr)
+    elif herramienta.startswith("📊"):
+        modo = st.radio("Cómo cargar la inflación", ["Mismo % todos los meses", "Un % por mes"], horizontal=True, key="h_inf_modo")
+        if modo.startswith("Mismo"):
+            c = st.columns(2)
+            mens = c[0].number_input("% mensual", value=3.0, step=0.1, key="h_inf_pct")
+            meses = c[1].number_input("Meses", min_value=1, value=3, step=1, key="h_inf_meses")
+            factor = (1 + mens / 100) ** meses
         else:
-            n = act + valor
-        if n and n > 0:
-            nuevos.append((r["id"], r["Producto"], act, redondear(n, paso)))
-    if nuevos:
-        vista = pd.DataFrame(nuevos, columns=["id", "Producto", "Actual", "Nuevo"]).drop(columns=["id"])
-        vista["Cambio"] = [(f"{(n / a - 1) * 100:+.1f}%" if a else "—") for _, _, a, n in nuevos]
-        with st.expander(f"Vista previa ({len(nuevos)} productos)", expanded=len(nuevos) <= 8):
-            st.dataframe(vista.head(200), hide_index=True, use_container_width=True,
-                         column_config={"Actual": st.column_config.NumberColumn(format="$ %.2f"),
-                                        "Nuevo": st.column_config.NumberColumn(format="$ %.2f")})
-        desc = {"Aumento / baja en %": f"{valor:+g}%", "Sumar / restar $": f"{valor:+g} $", "Precio fijo": f"fijo {pesos(valor)}"}[tipo]
-        alcance_txt = ("categoría " + ", ".join(cats)) if (cats and not alcance.startswith("Tildados")) else ("selección" if alcance.startswith("Tildados") else "lista filtrada")
-        if st.button(f"Crear {len(nuevos)} propuestas ({desc})", type="primary"):
-            proponer([(i, n) for i, _, _, n in nuevos], f"{desc} · {alcance_txt}")
-            st.rerun()
+            txt = st.text_input("Porcentaje de cada mes, separados por punto y coma", value="3,5; 2,7; 2,4", key="h_inf_lista")
+            partes = re.split(r"[;\n/]+", txt) if re.search(r"[;\n/]", txt) else (txt.split(", ") if ", " in txt else txt.split())
+            vals = [xl.a_numero(x) for x in partes if xl.a_numero(x) is not None]
+            st.caption("Meses tomados: " + ", ".join(f"{v:g}%" for v in vals))
+            factor = math.prod(1 + v / 100 for v in vals) if vals else 1
+        aplicar = st.slider("Trasladar a precios (%)", 0, 100, 100, 5, key="h_inf_tras",
+                            help="Si no querés trasladar toda la inflación, bajá este valor.")
+        total = (factor - 1) * aplicar / 100
+        st.info(f"Inflación acumulada: **{(factor - 1) * 100:+.2f}%** · se aplica **{total * 100:+.2f}%**")
+        calc = lambda a: a * (1 + total)
+        desc = f"inflación {total * 100:+.1f}%"
+    else:  # solo redondear
+        calc = lambda a: a
+        desc = "redondeo"
+    modo_r, sentido = redondeo_ui("h")
+    if herramienta.startswith("🔢"):
+        desc = f"redondeo ({modo_r.lower()})"
+    vista_y_proponer(prods, calc, modo_r, sentido, f"{desc} · {alcance_txt}")
+
+
+def vista_y_proponer(prods, calc, modo_r, sentido, motivo_def):
+    filas = []
+    for p in prods:
+        a = num(p.get("precio_publicado"))
+        if a is None:
+            continue
+        n = aplicar_redondeo(calc(a), modo_r, sentido)
+        if n and n > 0 and abs(n - a) >= 0.01:
+            filas.append({"id": p["id"], "Producto": p["nombre"], "Categoría": p.get("categoria"), "Actual": a, "Nuevo": n,
+                          "Variación %": round((n / a - 1) * 100, 1)})
+    st.divider()
+    if not filas:
+        st.caption("Con esta configuración no cambia ningún precio.")
+        return
+    df = pd.DataFrame(filas)
+    m = st.columns(4)
+    m[0].metric("Productos que cambian", len(df))
+    m[1].metric("Variación promedio", f"{df['Variación %'].mean():+.1f}%")
+    m[2].metric("Menor / mayor", f"{df['Variación %'].min():+.1f}% / {df['Variación %'].max():+.1f}%")
+    m[3].metric("Suma de la lista", pesos(df["Nuevo"].sum()), delta=f"{(df['Nuevo'].sum() / df['Actual'].sum() - 1) * 100:+.1f}%")
+    st.dataframe(df.drop(columns=["id"]).style.map(estilo_variacion, subset=["Variación %"])
+                 .format({"Actual": pesos, "Nuevo": pesos, "Variación %": lambda v: f"{v:+.1f}%"}),
+                 hide_index=True, use_container_width=True, height=min(420, 38 + 35 * len(df)))
+    motivo = st.text_input("Motivo (queda en el historial)", value=motivo_def, key="h_motivo_" + str(abs(hash(motivo_def))))
+    if st.button(f"Crear {len(df)} propuestas", type="primary"):
+        proponer([(r["id"], r["Nuevo"]) for _, r in df.iterrows()], motivo)
+        st.switch_page(PAGINAS["aprobar"])
+
+
+def herramienta_talles(cat):
+    st.caption("Ordena los precios de una familia por talle: elegís el precio del talle más chico y cuánto sube cada talle.")
+    fams = {}
+    for p in cat:
+        fams.setdefault(familia(p["nombre"]), []).append(p)
+    fams = {k: v for k, v in fams.items() if len(v) > 1}
+    fam = st.selectbox("Familia", sorted(fams), index=None, placeholder="Ej: Collar liso simple", key="h_fam")
+    if not fam:
+        return
+    grupo = fams[fam]
+    c = st.columns(3)
+    base = c[0].number_input("Precio del primer talle $", min_value=0.0, value=float(num(grupo[0].get("precio_publicado")) or 0), step=50.0, key="h_base")
+    tipo = c[1].selectbox("Cada talle sube", ["%", "$"], key="h_tipo_paso")
+    paso = c[2].number_input("Cuánto", value=5.0 if tipo == "%" else 200.0, step=1.0, key="h_paso")
+    modo_r, sentido = redondeo_ui("t")
+    nuevos = {}
+    v = base
+    for i, p in enumerate(grupo):
+        if i:
+            v = v * (1 + paso / 100) if tipo == "%" else v + paso
+        nuevos[p["id"]] = v
+    vista_y_proponer(grupo, lambda a, _it=iter([nuevos[p["id"]] for p in grupo if num(p.get("precio_publicado")) is not None]): next(_it),
+                     modo_r, sentido, f"escalera de talles {fam}: base {pesos(base)}, +{paso:g}{tipo} por talle")
+
+
+def herramienta_deshacer(cat):
+    hist = datos("precios_historial", "fecha", desc=True)
+    if not hist:
+        st.info("Todavía no hay actualizaciones aprobadas para deshacer.")
+        return
+    lotes = {}
+    for h in hist:
+        f = fecha_local(h["fecha"])
+        clave = f"{f:%d/%m/%Y %H:%M} · {h.get('motivo') or 'sin motivo'}"
+        lotes.setdefault(clave, []).append(h)
+    lote = st.selectbox("Actualización a deshacer", list(lotes), index=None, placeholder="Elegí una",
+                        format_func=lambda k: f"{k} ({len(lotes[k])} productos)", key="h_lote")
+    if not lote:
+        return
+    por_id = {p["id"]: p for p in cat}
+    filas, cambiados = [], 0
+    for h in lotes[lote]:
+        p = por_id.get(h.get("catalogo_id"))
+        if not p:
+            continue
+        if num(p.get("precio_publicado")) != num(h.get("precio_nuevo")):
+            cambiados += 1
+            continue
+        filas.append(p)
+    if cambiados:
+        st.warning(f"{cambiados} productos ya tuvieron otro cambio después: no se tocan.")
+    anteriores = {h["catalogo_id"]: num(h["precio_anterior"]) for h in lotes[lote]}
+    vista_y_proponer(filas, lambda a, _ids=iter([p["id"] for p in filas]): anteriores[next(_ids)],
+                     "Sin redondeo", "Arriba", f"Deshacer: {lote}")
+
+
+# ---------------------------------------------------------------- calculadoras
+def pagina_calculadoras():
+    st.title("🧮 Calculadoras")
+    st.caption("Para hacer cuentas rápidas. No cambian ningún precio.")
+    t = st.radio("Calculadora", ["Margen y ganancia", "Comisión de cobro", "Promo 6+1 / 10+2", "IVA", "Variación entre dos precios"],
+                 horizontal=True, label_visibility="collapsed", key="c_tool")
+    st.write("")
+    if t == "Margen y ganancia":
+        a, b = st.columns(2)
+        with a.container(border=True):
+            st.markdown("**Tengo el costo → ¿a cuánto vendo?**")
+            costo = st.number_input("Costo $", min_value=0.0, value=1000.0, step=50.0, key="c_costo")
+            modo = st.radio("Quiero", ["Markup (sobre el costo)", "Margen (sobre el precio)"], key="c_modo")
+            pct = st.number_input("%", min_value=0.0, max_value=95.0 if modo.startswith("Margen") else 1000.0, value=40.0, step=1.0, key="c_pct")
+            precio = costo * (1 + pct / 100) if modo.startswith("Markup") else costo / (1 - pct / 100)
+            st.metric("Precio de venta", pesos(precio), delta=f"ganancia {pesos(precio - costo)}")
+        with b.container(border=True):
+            st.markdown("**Tengo costo y precio → ¿cuánto gano?**")
+            c2 = st.number_input("Costo $", min_value=0.0, value=1000.0, step=50.0, key="c_costo2")
+            p2 = st.number_input("Precio de venta $", min_value=0.0, value=1500.0, step=50.0, key="c_precio2")
+            if c2 and p2:
+                st.metric("Ganancia por unidad", pesos(p2 - c2))
+                st.metric("Markup (sobre costo)", f"{(p2 / c2 - 1) * 100:.1f}%")
+                st.metric("Margen (sobre precio)", f"{(1 - c2 / p2) * 100:.1f}%")
+    elif t == "Comisión de cobro":
+        st.markdown("¿A cuánto tengo que cobrar para que me quede un monto neto, después de la comisión de la plataforma?")
+        presets = {"Pago Nube · 1 día": 6.09, "Pago Nube · 7 días": 4.39, "Pago Nube · 14 días": 3.49, "Pago Nube · 30 días": 2.97,
+                   "Transferencia Pago Nube": 1.5, "Otra": 5.0}
+        c = st.columns(3)
+        neto = c[0].number_input("Quiero recibir $", min_value=0.0, value=10000.0, step=100.0, key="c_neto")
+        pre = c[1].selectbox("Medio de cobro", list(presets), key="c_preset")
+        com = c[2].number_input("Comisión %", min_value=0.0, max_value=50.0, value=presets[pre], step=0.1, key=f"c_com_{pre}")
+        iva = st.checkbox("La comisión se cobra + IVA (21%)", value=True, key="c_iva")
+        total_com = com * (1.21 if iva else 1)
+        cobrar = neto / (1 - total_com / 100)
+        m = st.columns(3)
+        m[0].metric("Cobrar", pesos(cobrar))
+        m[1].metric("Se lleva la plataforma", pesos(cobrar - neto))
+        m[2].metric("Recargo a aplicar", f"{(cobrar / neto - 1) * 100:.2f}%")
+        st.caption("Plan Esencial de Tiendanube (Argentina). Revisá que los porcentajes sigan vigentes antes de usarlos.")
+    elif t == "Promo 6+1 / 10+2":
+        c = st.columns(2)
+        precio = c[0].number_input("Precio unitario de lista $", min_value=0.0, value=3000.0, step=50.0, key="c_promo_p")
+        promo = c[1].radio("Promo", ["6+1", "10+2"], horizontal=True, key="c_promo_t")
+        lleva, paga = (7, 6) if promo == "6+1" else (12, 10)
+        m = st.columns(3)
+        m[0].metric(f"Paga por {lleva} unidades", pesos(precio * paga))
+        m[1].metric("Le sale cada una", pesos(precio * paga / lleva))
+        m[2].metric("Descuento equivalente", f"{(1 - paga / lleva) * 100:.1f}%")
+        st.divider()
+        objetivo = st.number_input("Si querés que con la promo cada unidad te quede en $…", min_value=0.0, value=2500.0, step=50.0, key="c_promo_obj")
+        st.metric("…el precio de lista tiene que ser", pesos(objetivo * lleva / paga))
+    elif t == "IVA":
+        c = st.columns(3)
+        monto = c[0].number_input("Monto $", min_value=0.0, value=10000.0, step=100.0, key="c_iva_m")
+        tasa = c[1].selectbox("Alícuota", [21.0, 10.5, 27.0], format_func=lambda x: f"{x:g}%", key="c_iva_t")
+        sentido = c[2].radio("El monto es", ["Sin IVA", "Con IVA"], key="c_iva_s")
+        if sentido == "Sin IVA":
+            st.metric("Con IVA", pesos(monto * (1 + tasa / 100)), delta=f"IVA {pesos(monto * tasa / 100)}")
+        else:
+            neto = monto / (1 + tasa / 100)
+            st.metric("Sin IVA", pesos(neto), delta=f"IVA {pesos(monto - neto)}", delta_color="off")
     else:
-        st.caption("Tildá productos o elegí 'Todos los de la lista' para ver la vista previa.")
+        c = st.columns(2)
+        a = c[0].number_input("Precio anterior $", min_value=0.0, value=1000.0, step=50.0, key="c_var_a")
+        b = c[1].number_input("Precio nuevo $", min_value=0.0, value=1150.0, step=50.0, key="c_var_b")
+        if a:
+            st.metric("Variación", f"{(b / a - 1) * 100:+.2f}%", delta=pesos(b - a))
+
+
+# ---------------------------------------------------------------- exportar
+def pagina_exportar():
+    st.title("📥 Exportar Excel")
+    cat = catalogo()
+    tipo = st.radio("Tipo de archivo", ["🎨 Lista para clientes (con diseño)", "🛠️ Planilla de trabajo (para editar y volver a subir)"],
+                    key="e_tipo")
+    c = st.columns([1.1, 2.5])
+    linea = c[0].selectbox("Línea", ["Todas", "Fabricados", "Importados"], key="e_linea")
+    cats_all = []
+    for p in cat:
+        if filtro_linea(p, linea) and p.get("categoria") not in cats_all:
+            cats_all.append(p.get("categoria"))
+    cats = c[1].multiselect("Categorías (vacío = todas)", cats_all, placeholder="Todas", key="e_cats")
+    prods = [p for p in cat if filtro_linea(p, linea) and (not cats or p.get("categoria") in cats)]
+    st.caption(f"{len(prods)} productos")
+    hoy = datetime.now().strftime("%d/%m/%Y")
+    if tipo.startswith("🎨"):
+        a, b = st.columns(2)
+        titulo = a.text_input("Título", value="Lista de precios mayorista", key="e_titulo")
+        nota = b.text_input("Nota extra (opcional)", placeholder="Ej: Lista especial revendedores", key="e_nota")
+        d = st.columns(3)
+        desc = d[0].number_input("Descuento para esta lista %", min_value=0.0, max_value=90.0, value=0.0, step=1.0, key="e_desc",
+                                 help="Solo cambia el archivo, no los precios publicados.")
+        promo = d[1].checkbox("Columna con precio promo 6+1", value=True, key="e_promo")
+        med = d[2].checkbox("Columna de medidas", value=True, key="e_med")
+        datos_x = [{"nombre": p["nombre"], "categoria": p.get("categoria"), "linea": p.get("linea"), "ancho": p.get("ancho"),
+                    "largo": p.get("largo"), "precio": num(p.get("precio_publicado")), "promo": p.get("promo")} for p in prods]
+        st.download_button("📥 Descargar lista para clientes", xl.excel_lista_clientes(datos_x, hoy, desc, promo, med, titulo, nota),
+                           file_name=f"Lista_precios_TAIRA_{date.today():%d-%m-%Y}.xlsx", type="primary",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", disabled=not prods)
+        st.caption("Agrupada por línea y categoría, con encabezado TAIRA, envíos y promo. Lista para mandar por WhatsApp o imprimir en A4.")
+    else:
+        ult = ultimos_cambios()
+        exp = pd.DataFrame([{
+            "ID TAIRA": p["id"], "Producto": p["nombre"], "Categoría": p.get("categoria"),
+            "Línea": "Fabricado" if p.get("linea") == "fabricado" else "Importado", "Medida": medida(p),
+            "Precio actual": num(p.get("precio_publicado")),
+            "Últ. cambio": (fecha_local(ult.get(p["id"])).strftime("%d/%m/%Y") if ult.get(p["id"]) else "Carga inicial"),
+        } for p in prods])
+        st.download_button("📥 Descargar planilla de trabajo", xl.excel_lista(exp, hoy), type="primary",
+                           file_name=f"planilla_precios_{date.today():%Y-%m-%d}.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", disabled=not prods)
+        st.caption("Completá la columna amarilla **Precio nuevo** y subila en **Importar Excel** para comparar y aprobar.")
 
 
 def estilo_variacion(v):
@@ -472,9 +783,12 @@ if not ss.autenticado:
 asegurar_token()
 
 PAGINAS = {
-    "lista": st.Page(pagina_lista, title="Lista de precios", icon="📋", url_path="lista", default=True),
+    "lista": st.Page(pagina_lista, title="Precios", icon="📋", url_path="lista", default=True),
+    "herramientas": st.Page(pagina_herramientas, title="Herramientas", icon="🧰", url_path="herramientas"),
     "aprobar": st.Page(pagina_aprobar, title="Revisar y aprobar", icon="✅", url_path="aprobar"),
     "importar": st.Page(pagina_importar, title="Importar Excel", icon="📤", url_path="importar"),
+    "exportar": st.Page(pagina_exportar, title="Exportar Excel", icon="📥", url_path="exportar"),
+    "calculadoras": st.Page(pagina_calculadoras, title="Calculadoras", icon="🧮", url_path="calculadoras"),
     "historial": st.Page(pagina_historial, title="Historial", icon="📜", url_path="historial"),
 }
 with st.sidebar:
@@ -483,6 +797,7 @@ with st.sidebar:
 nav = st.navigation(list(PAGINAS.values()))
 with st.sidebar:
     st.divider()
+    st.link_button("🏠 Panel TAIRA", "https://taira-pedidos.netlify.app/inicio.html", use_container_width=True)
     if st.button("🔄 Actualizar", use_container_width=True):
         leer.clear()
         st.rerun()

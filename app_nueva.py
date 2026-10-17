@@ -749,6 +749,7 @@ nav = st.navigation(list(PAGINAS.values()))
 
 with st.sidebar:
     st.divider()
+    st.link_button("🏠 Panel TAIRA", "https://taira-pedidos.netlify.app/inicio.html", use_container_width=True)
     if st.button("🔄 Actualizar datos", use_container_width=True):
         refrescar()
         st.rerun()

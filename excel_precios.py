@@ -293,3 +293,120 @@ def excel_comparacion(df, nombre_archivo, fecha_txt):
 def excel_historial(df):
     return a_excel([("Historial", df, {"monedas": ("Precio anterior", "Precio nuevo"), "pct_cols": ("Variación %",),
                                        "anchos": {"Producto": 48}})])
+
+
+# ---------------------------------------------------------------- lista para clientes (con diseño)
+CREMA = "FFF6E3"
+CREMA2 = "FDECC8"
+ROJO_OSC = "A50E13"
+TINTA = "2B1D14"
+
+
+def excel_lista_clientes(productos, fecha_txt, descuento=0.0, mostrar_promo=True, mostrar_medida=True,
+                         titulo="Lista de precios mayorista", nota_extra=""):
+    """productos: lista de dicts con nombre, categoria, linea, ancho, largo, precio, promo (ordenados).
+    Devuelve un .xlsx listo para mandar o imprimir: agrupado por línea y categoría, con encabezado TAIRA."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Lista de precios"
+    ws.sheet_view.showGridLines = False
+    cols = ["Producto"] + (["Medida"] if mostrar_medida else []) + ["Precio unitario"] + (["Con promo 6+1 (c/u)"] if mostrar_promo else [])
+    anchos = {"Producto": 50, "Medida": 22, "Precio unitario": 17, "Con promo 6+1 (c/u)": 19}
+    n = len(cols)
+    ultima = get_column_letter(n)
+    for j, c in enumerate(cols, start=1):
+        ws.column_dimensions[get_column_letter(j)].width = anchos[c]
+
+    fino = Side(style="thin", color="EAD7B0")
+    def fila_merge(texto, alto, fuente, relleno=None, alin="center"):
+        ws.append([texto] + [None] * (n - 1))
+        r = ws.max_row
+        ws.merge_cells(f"A{r}:{ultima}{r}")
+        c = ws[f"A{r}"]
+        c.font = fuente
+        c.alignment = Alignment(horizontal=alin, vertical="center", wrap_text=True)
+        if relleno:
+            for j in range(1, n + 1):
+                ws.cell(row=r, column=j).fill = PatternFill("solid", fgColor=relleno)
+        ws.row_dimensions[r].height = alto
+        return r
+
+    fila_merge("TAIRA", 44, Font(name="Calibri", size=30, bold=True, color="FFFFFF"), ROJO)
+    fila_merge("FÁBRICA Y DISTRIBUIDORA", 18, Font(size=11, bold=True, color="FFFFFF"), ROJO)
+    fila_merge(f"{titulo} · Veterinarias y pet shops", 24, Font(size=13, bold=True, color=TINTA), CREMA2)
+    texto_desc = f" · Incluye {descuento:g}% de descuento" if descuento else ""
+    fila_merge(f"Vigente desde el {fecha_txt}{texto_desc}", 18, Font(size=10, italic=True, color="7A6A5C"), CREMA2)
+    fila_merge("🚚 Envío gratis en Misiones desde $150.000 · a todo el país desde $500.000", 18,
+               Font(size=10, bold=True, color=ROJO_OSC), CREMA)
+    if mostrar_promo:
+        fila_merge("🎁 PROMO en productos fabricados: llevando 6 del mismo producto y talle, 1 va de regalo (colores surtidos)", 18,
+                   Font(size=10, bold=True, color=TINTA), CREMA)
+    fila_merge("Pedidos por WhatsApp +54 9 3741 40-0146 · Pedí online: taira-pedidos.netlify.app" + (f" · {nota_extra}" if nota_extra else ""),
+               18, Font(size=10, color=TINTA), CREMA)
+    ws.append([])
+
+    lineas = [("fabricado", "FABRICADOS POR TAIRA"), ("importado", "PRODUCTOS IMPORTADOS")]
+    primera_tabla = None
+    for clave, titulo_linea in lineas:
+        grupo = [p for p in productos if p.get("linea") == clave]
+        if not grupo:
+            continue
+        fila_merge(titulo_linea, 26, Font(size=13, bold=True, color="FFFFFF"), ROJO_OSC, alin="left")
+        cats = []
+        for p in grupo:
+            if p.get("categoria") not in cats:
+                cats.append(p.get("categoria"))
+        for cat in cats:
+            r = fila_merge(cat or "Otros", 22, Font(size=12, bold=True, color=ROJO), "FFFFFF", alin="left")
+            ws.cell(row=r, column=1).border = Border(bottom=Side(style="medium", color=ROJO))
+            for j in range(2, n + 1):
+                ws.cell(row=r, column=j).border = Border(bottom=Side(style="medium", color=ROJO))
+            ws.append(cols)
+            hr = ws.max_row
+            primera_tabla = primera_tabla or hr
+            for j in range(1, n + 1):
+                c = ws.cell(row=hr, column=j)
+                c.font = Font(size=9, bold=True, color="7A6A5C")
+                c.alignment = Alignment(horizontal="left" if j == 1 else "center")
+            for k, p in enumerate([x for x in grupo if x.get("categoria") == cat]):
+                precio = p.get("precio")
+                precio = round(float(precio) * (1 - descuento / 100), 2) if precio is not None else None
+                fila = [p["nombre"]]
+                if mostrar_medida:
+                    fila.append(" · ".join(str(x) for x in (p.get("ancho"), p.get("largo")) if x) or "")
+                fila.append(precio if precio is not None else "Consultar")
+                if mostrar_promo:
+                    fila.append(round(precio * 6 / 7, 2) if (precio is not None and p.get("promo")) else "")
+                ws.append(fila)
+                r = ws.max_row
+                relleno = PatternFill("solid", fgColor=CREMA if k % 2 else "FFFFFF")
+                for j in range(1, n + 1):
+                    c = ws.cell(row=r, column=j)
+                    c.fill = relleno
+                    c.border = Border(bottom=fino)
+                    c.font = Font(size=10, color=TINTA)
+                    if j > 1:
+                        c.alignment = Alignment(horizontal="center" if cols[j - 1] == "Medida" else "right")
+                    if cols[j - 1] in ("Precio unitario", "Con promo 6+1 (c/u)") and isinstance(c.value, (int, float)):
+                        c.number_format = '"$" #,##0.00'
+                        if cols[j - 1] == "Precio unitario":
+                            c.font = Font(size=10, bold=True, color=TINTA)
+                        else:
+                            c.font = Font(size=10, color="17663A")
+            ws.append([])
+    fila_merge("Los precios están sujetos a modificaciones. Para más descuentos y formas de pago consultá con el vendedor.",
+               30, Font(size=9, italic=True, color="7A6A5C"), None)
+
+    ws.page_setup.orientation = "portrait"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_margins.left = ws.page_margins.right = 0.4
+    ws.page_margins.top = ws.page_margins.bottom = 0.5
+    ws.print_options.horizontalCentered = True
+    ws.oddFooter.center.text = "TAIRA · Lista de precios · Página &P de &N"
+    ws.oddFooter.center.size = 8
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
