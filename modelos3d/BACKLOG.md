@@ -15,8 +15,6 @@ Reglas de todos los modelos:
 - Cada modelo en `out/coleccion/<nn>_<nombre>/`: plato1_base.3mf, plato2_encastres.3mf, portada.jpg, piezas.jpg, atras.jpg, 2 portadas con otras combinaciones de color, `makerworld.md` (título, descripción en español e inglés, etiquetas, ajustes de impresión, tiempo y gramos estimados).
 
 ## Pendientes (tomar de arriba hacia abajo, 2 por vuelta)
-- [ ] 20 Chapita médica (idea de veterinario): cruz + 'NECESITO MEDICACIÓN' / nombre, y atrás teléfono del dueño y del veterinario
-- [ ] 21 Medalla redonda para gato con silueta de gato sentado y nombre en arco
 - [ ] 22 Cartel humor 'AQUÍ VIVE UN GATO… Y SUS EMPLEADOS' 120×60
 - [ ] 23 Plaquita para el plato 'COMIDA DE ____' 70×22 con hueso (se pega con cinta doble faz)
 - [ ] 24 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
@@ -41,6 +39,8 @@ Reglas de todos los modelos:
 - [x] 17 Llavero ADOPTÁ (out/coleccion/17_llavero_adopta)
 - [x] 18 Cartel 'Acá no se hace caca' 120×80 con perro (out/coleccion/18_cartel_caca) — función sitting_dog en m18_19.py
 - [x] 19 Imán 'Mi perro es mi terapia' 96×45 (out/coleccion/19_iman_terapia)
+- [x] 20 Chapita médica BRUNO (out/coleccion/20_chapita_medica)
+- [x] 21 Medalla gato MICHI (out/coleccion/21_medalla_gato) — función sitting_cat en m20_21.py
 - [x] Hoja de contacto 1080×1350 (out/coleccion/hoja_contacto_instagram.jpg) — regenerar al sumar modelos
 - [x] Prueba de tolerancias (out/test_tolerancia)
 - [x] Chapita hueso TOBY (out/chapita_hueso_TOBY)
