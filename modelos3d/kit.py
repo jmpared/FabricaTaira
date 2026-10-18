@@ -11,6 +11,8 @@ COMBOS = [("#1f3a5f", "#f2c14e"), ("#e2557f", "#fbf6ee"), ("#2d6a4f", "#f4a261")
 def build(slug, title_es, sub_es, c, S_base, S_deco, S_back=None, combos=(0, 1, 2), info=None, elev=58, azim=-14, base_h=BASE_H):
     out = f"out/coleccion/{slug}"; os.makedirs(out, exist_ok=True)
     print(slug, 'zonas finas (pared, encastre):', thin_check(c, S_base, S_deco, img_path=f'{out}/_control_paredes.png'))
+    margen = float(S_base[grow(S_deco, TOL) < 0].max())
+    assert margen < -0.7, f'{slug}: un hueco queda a {-margen:.2f} mm del borde (mínimo 0.7)'
     base = Stack(c)
     top0 = base_h - POCKET_D
     if S_back is not None:
