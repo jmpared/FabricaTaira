@@ -66,6 +66,13 @@ def loops_of(field, cv, tol=0.006):
         x = (c[:, 1] - 2 + 0.5) * cv.res - cv.w / 2
         y = cv.h / 2 - (c[:, 0] - 2 + 0.5) * cv.res
         L = np.stack([x, y], 1)
+        # quitar vértices colineales (incluido el punto inicial que conserva approximate_polygon)
+        for _ in range(3):
+            P, N = np.roll(L, 1, 0), np.roll(L, -1, 0)
+            cr = (L[:, 0] - P[:, 0]) * (N[:, 1] - L[:, 1]) - (L[:, 1] - P[:, 1]) * (N[:, 0] - L[:, 0])
+            keep = np.abs(cr) > 1e-10
+            if keep.all() or keep.sum() < 3: break
+            L = L[keep]
         if abs(area(L)) < 1e-4: continue
         out.append(L)
     return out

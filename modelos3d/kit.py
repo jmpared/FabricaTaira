@@ -23,6 +23,9 @@ def build(slug, title_es, sub_es, c, S_base, S_deco, S_back=None, combos=(0, 1, 
     Vb, Fb = base.mesh(); kb = check(Vb, Fb)
     ins = Stack(c); ins.slab(0, 0.25, grow(S_deco, -0.2)); ins.slab(0.25, INS_H, S_deco)
     Vi, Fi = ins.mesh(); ki = check(Vi, Fi)
+    if not (ki["estanca"] and ki["orientada"]):
+        print(slug, ': bisel del encastre con contornos coincidentes -> encastre sin bisel')
+        ins = Stack(c); ins.slab(0, INS_H, S_deco); Vi, Fi = ins.mesh(); ki = check(Vi, Fi)
     assert kb["estanca"] and kb["orientada"] and ki["estanca"] and ki["orientada"], (kb, ki)
     write_3mf(f"{out}/{slug}_plato1_base.3mf", [("base", Vb, Fb)])
     write_3mf(f"{out}/{slug}_plato2_encastres.3mf", [("encastres", Vi, Fi)])
