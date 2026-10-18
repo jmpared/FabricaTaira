@@ -13,9 +13,6 @@ Reglas de todos los modelos:
 - Cada modelo en `out/coleccion/<nn>_<nombre>/`: plato1_base.3mf, plato2_encastres.3mf, portada.jpg, piezas.jpg, atras.jpg, 2 portadas con otras combinaciones de color, `makerworld.md` (título, descripción en español e inglés, etiquetas, ajustes de impresión, tiempo y gramos estimados).
 
 ## Pendientes (tomar de arriba hacia abajo, 2 por vuelta)
-- [ ] 10 Hoja de contacto con todas las portadas de la colección (imagen para Instagram de TAIRA)
-- [ ] 12 Medalla redonda con corazón central (variante de 03/10)
-- [ ] 13 Posavasos huella 90 mm (base + huella encastrada, sin agujero)
 - [ ] 14 Imán de heladera hueso 'NO TE OLVIDES DEL PASEO' (hueco atrás para imán de 10×2 mm)
 - [ ] 15 Señalador de libro con huellas (25×80 mm)
 - [ ] 16 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
@@ -32,6 +29,9 @@ Reglas de todos los modelos:
 - [x] 09 Cartel ¡Cuidado! Perro cariñoso 120×60 (out/coleccion/09_cartel_perro_carinoso)
 - [x] 10 Medalla estrella COCO (out/coleccion/10_medalla_estrella)
 - [x] 11 Chapita hexágono geométrico NALA (out/coleccion/11_hexagono_geometrico)
+- [x] 12 Medalla corazón KIRA (out/coleccion/12_medalla_corazon)
+- [x] 13 Posavasos huella 90 mm (out/coleccion/13_posavasos_huella)
+- [x] Hoja de contacto 1080×1350 (out/coleccion/hoja_contacto_instagram.jpg) — regenerar al sumar modelos
 - [x] Prueba de tolerancias (out/test_tolerancia)
 - [x] Chapita hueso TOBY (out/chapita_hueso_TOBY)
 - [x] Medalla redonda LOLA (out/medalla_LOLA)
