@@ -15,9 +15,11 @@ Reglas de todos los modelos:
 - Cada modelo en `out/coleccion/<nn>_<nombre>/`: plato1_base.3mf, plato2_encastres.3mf, portada.jpg, piezas.jpg, atras.jpg, 2 portadas con otras combinaciones de color, `makerworld.md` (título, descripción en español e inglés, etiquetas, ajustes de impresión, tiempo y gramos estimados).
 
 ## Pendientes (tomar de arriba hacia abajo, 2 por vuelta)
-- [ ] 18 Cartel con humor 'ACÁ NO SE HACE CACA' 120×80 con silueta de perro sentado simple (geométrica)
-- [ ] 19 Imán 'MI PERRO ES MI TERAPIA' rectangular 80×40 con huellas
-- [ ] 20 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
+- [ ] 20 Chapita médica (idea de veterinario): cruz + 'NECESITO MEDICACIÓN' / nombre, y atrás teléfono del dueño y del veterinario
+- [ ] 21 Medalla redonda para gato con silueta de gato sentado y nombre en arco
+- [ ] 22 Cartel humor 'AQUÍ VIVE UN GATO… Y SUS EMPLEADOS' 120×60
+- [ ] 23 Plaquita para el plato 'COMIDA DE ____' 70×22 con hueso (se pega con cinta doble faz)
+- [ ] 24 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
 
 ## Hechos
 - [x] 01 Corazón LUNA (out/coleccion/01_corazon)
@@ -37,6 +39,8 @@ Reglas de todos los modelos:
 - [x] 15 Señalador con huellas 26×82 (out/coleccion/15_senalador_huellas) — base 2.4 mm
 - [x] 16 Escudo de club C.A. TOBY (out/coleccion/16_escudo_club)
 - [x] 17 Llavero ADOPTÁ (out/coleccion/17_llavero_adopta)
+- [x] 18 Cartel 'Acá no se hace caca' 120×80 con perro (out/coleccion/18_cartel_caca) — función sitting_dog en m18_19.py
+- [x] 19 Imán 'Mi perro es mi terapia' 96×45 (out/coleccion/19_iman_terapia)
 - [x] Hoja de contacto 1080×1350 (out/coleccion/hoja_contacto_instagram.jpg) — regenerar al sumar modelos
 - [x] Prueba de tolerancias (out/test_tolerancia)
 - [x] Chapita hueso TOBY (out/chapita_hueso_TOBY)

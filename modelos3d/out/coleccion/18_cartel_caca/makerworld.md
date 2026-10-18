@@ -1,0 +1,29 @@
+# Cartel 'ACÁ NO SE HACE CACA' con perro — 2 colores sin AMS
+
+**EN:** Funny 'No pooping here' dog sign (Spanish) — 2 colors, no AMS
+
+## Descripción
+Cartel con humor para la vereda, el jardín o el palier: 'ACÁ NO SE HACE CACA' con silueta de perro sentado. Letras, borde y perro encastrados en otro color. Dos agujeros para tornillo o precinto.
+
+- Multicolor **sin AMS**: cada color es una pieza aparte que se encastra a presión (sin pegamento).
+- Plato 1: base (color 1). Plato 2: encastres (color 2).
+- Medida: 120 × 80 mm, espesor 3.2 mm.
+- Juego de encastre: 0.15 mm. Si te queda flojo o duro, avisá en comentarios y subo otra variante.
+
+## Description (EN)
+Funny Spanish sign 'No pooping here' with a sitting dog silhouette. Press-fit text, border and dog. Two holes for screws or zip ties.
+
+- Multicolor **without AMS**: each color is a separate part that press-fits (no glue).
+- Plate 1: base (color 1). Plate 2: inlays (color 2). Size 120 × 80 mm.
+
+## Ajustes sugeridos
+- Capa 0,2 mm · 3 paredes · relleno 15 % · sin soportes.
+- Base boca arriba con planchado (ironing) en la cara superior.
+- Encastres planos; si son chicos, borde (brim) fino o primera capa lenta.
+
+## Estimado (P2S)
+- Base: ~53 min · ~32.0 g
+- Encastres: ~19 min · ~6.6 g
+
+## Etiquetas
+cartel, perro, caca, no pooping, dog sign, humor, funny, jardín, vereda, multicolor, no AMS, press fit
