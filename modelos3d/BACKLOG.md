@@ -8,14 +8,17 @@ Reglas de todos los modelos:
 - Usar `kit.build()` (incluye control de paredes finas `_control_paredes.png`: azul = pared de base < 0.9 mm, naranja = encastre < 0.85 mm). Letras con track ≥ 1.2. Formas comunes en `shapes.py` (paw, band, back_text, fit_cap, line). Huella: usar `paw()` (dedos 1.4×1.85, escala ≥ 0.7).
 - Si el encastre con bisel no queda estanco, kit.build() lo rehace sin bisel (aviso en consola). extru.loops_of ahora quita vértices colineales.
 - Piezas grandes (carteles): Canvas(..., res=0.04) para no quedarse sin memoria.
+- build(base_h=..., back_d=...) permite piezas más gruesas y huecos traseros profundos (imanes). earcut.KEEP_COLLINEAR=True evita uniones en T.
 - kit.build() también exige que los huecos queden a ≥ 0.7 mm del borde exterior.
 - Verificar SIEMPRE `check()` → estanca y orientada = True, y mirar la portada antes de darlo por hecho.
 - Cada modelo en `out/coleccion/<nn>_<nombre>/`: plato1_base.3mf, plato2_encastres.3mf, portada.jpg, piezas.jpg, atras.jpg, 2 portadas con otras combinaciones de color, `makerworld.md` (título, descripción en español e inglés, etiquetas, ajustes de impresión, tiempo y gramos estimados).
 
 ## Pendientes (tomar de arriba hacia abajo, 2 por vuelta)
-- [ ] 14 Imán de heladera hueso 'NO TE OLVIDES DEL PASEO' (hueco atrás para imán de 10×2 mm)
-- [ ] 15 Señalador de libro con huellas (25×80 mm)
-- [ ] 16 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
+- [ ] 16 Escudo de club de fútbol con el nombre ('CLUB ATLÉTICO ____', estilo escudo argentino, con estrella)
+- [ ] 17 Llavero 'ADOPTÁ' con huella y corazón (para refugios / campañas)
+- [ ] 18 Cartel con humor 'ACÁ NO SE HACE CACA' 120×80 con silueta de perro sentado simple (geométrica)
+- [ ] 19 Imán 'MI PERRO ES MI TERAPIA' rectangular 80×40 con huellas
+- [ ] 20 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
 
 ## Hechos
 - [x] 01 Corazón LUNA (out/coleccion/01_corazon)
@@ -31,6 +34,8 @@ Reglas de todos los modelos:
 - [x] 11 Chapita hexágono geométrico NALA (out/coleccion/11_hexagono_geometrico)
 - [x] 12 Medalla corazón KIRA (out/coleccion/12_medalla_corazon)
 - [x] 13 Posavasos huella 90 mm (out/coleccion/13_posavasos_huella)
+- [x] 14 Imán hueso 'No te olvides del paseo' con 2 huecos para imán 10×2 (out/coleccion/14_iman_hueso_paseo) — base 4.4 mm
+- [x] 15 Señalador con huellas 26×82 (out/coleccion/15_senalador_huellas) — base 2.4 mm
 - [x] Hoja de contacto 1080×1350 (out/coleccion/hoja_contacto_instagram.jpg) — regenerar al sumar modelos
 - [x] Prueba de tolerancias (out/test_tolerancia)
 - [x] Chapita hueso TOBY (out/chapita_hueso_TOBY)

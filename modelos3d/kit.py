@@ -8,7 +8,7 @@ TOL = 0.15
 BASE_H, POCKET_D, INS_H, BACK_D = 3.2, 1.6, 2.0, 0.4
 COMBOS = [("#1f3a5f", "#f2c14e"), ("#e2557f", "#fbf6ee"), ("#2d6a4f", "#f4a261"), ("#222222", "#e63946"), ("#6c4ab6", "#ffd166")]
 
-def build(slug, title_es, sub_es, c, S_base, S_deco, S_back=None, combos=(0, 1, 2), info=None, elev=58, azim=-14, base_h=BASE_H):
+def build(slug, title_es, sub_es, c, S_base, S_deco, S_back=None, combos=(0, 1, 2), info=None, elev=58, azim=-14, base_h=BASE_H, back_d=BACK_D):
     out = f"out/coleccion/{slug}"; os.makedirs(out, exist_ok=True)
     print(slug, 'zonas finas (pared, encastre):', thin_check(c, S_base, S_deco, img_path=f'{out}/_control_paredes.png'))
     margen = float(S_base[grow(S_deco, TOL) < 0].max())
@@ -16,7 +16,7 @@ def build(slug, title_es, sub_es, c, S_base, S_deco, S_back=None, combos=(0, 1, 
     base = Stack(c)
     top0 = base_h - POCKET_D
     if S_back is not None:
-        base.slab(0, BACK_D, diff(S_base, S_back)); base.slab(BACK_D, top0, S_base)
+        base.slab(0, back_d, diff(S_base, S_back)); base.slab(back_d, top0, S_base)
     else:
         base.slab(0, top0, S_base)
     base.slab(top0, base_h, diff(S_base, grow(S_deco, TOL)))

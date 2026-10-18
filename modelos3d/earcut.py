@@ -1,5 +1,6 @@
 """Port de mapbox/earcut (ISC) a Python. earcut(data, holeIndices, dim=2) -> lista de índices de triángulos."""
 import math
+KEEP_COLLINEAR = True  # no borrar vértices colineales: evita uniones en T con las paredes
 
 class Node:
     __slots__ = ("i", "x", "y", "prev", "next", "z", "prevZ", "nextZ", "steiner")
@@ -39,7 +40,7 @@ def filter_points(start, end=None):
     p = start
     while True:
         again = False
-        if not p.steiner and (equals(p, p.next) or area(p.prev, p, p.next) == 0):
+        if not p.steiner and (equals(p, p.next) or (KEEP_COLLINEAR is False and area(p.prev, p, p.next) == 0)):
             remove_node(p); p = end = p.prev
             if p is p.next: break
             again = True
