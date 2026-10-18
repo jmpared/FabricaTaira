@@ -10,9 +10,11 @@ def bg_grad(W, H, c1, c2):
     t = np.clip(y * 0.8 + (x ** 2) * 0.15, 0, 1)
     return Image.fromarray((a * (1 - t) + b * t).astype(np.uint8))
 
-def shot(parts, W=1600, H=1200, elev=50, azim=-20, c1=(250, 246, 238), c2=(222, 214, 200), margin=0.16):
+def shot(parts, W=1600, H=1200, elev=50, azim=-20, c1=(250, 246, 238), c2=(222, 214, 200), margin=0.16, dy=0):
     obj = render(parts, None, elev=elev, azim=azim, W=W, H=H, margin=margin, transparent=True)
     base = bg_grad(W, H, c1, c2).convert("RGBA")
+    if dy:
+        o2 = Image.new('RGBA', (W, H), (0, 0, 0, 0)); o2.paste(obj, (0, int(dy))); obj = o2
     a = obj.split()[3]
     sh = Image.new("RGBA", (W, H), (60, 40, 20, 0)); sh.putalpha(a.point(lambda v: int(v * 0.45)))
     sh = sh.transform((W, H), Image.AFFINE, (1, 0, -18, 0, 1, -34)).filter(ImageFilter.GaussianBlur(26))

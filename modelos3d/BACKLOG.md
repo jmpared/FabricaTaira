@@ -5,12 +5,12 @@ Reglas de todos los modelos:
 - Base 3.2 mm, hueco 1.6 mm, encastre 2.0 mm (sobresale 0.4), bisel inferior escalonado 0.25 mm, grabado trasero 0.4 mm espejado.
 - Paredes entre huecos ≥ 1.0 mm, trazos de encastre ≥ 1.2 mm de ancho. Sin piezas menores a 3 mm.
 - Herramientas: `extru.py` (Stack/Canvas/text_arc/ellipse/closing, check, write_3mf), `cover.py` (shot/title).
+- Usar `kit.build()` (incluye control de paredes finas `_control_paredes.png`: azul = pared de base < 0.9 mm, naranja = encastre < 0.85 mm). Letras con track ≥ 1.2. Huella: usar `paw()` de m01_02.py (dedos 1.4×1.85, escala ≥ 0.7).
 - Verificar SIEMPRE `check()` → estanca y orientada = True, y mirar la portada antes de darlo por hecho.
 - Cada modelo en `out/coleccion/<nn>_<nombre>/`: plato1_base.3mf, plato2_encastres.3mf, portada.jpg, piezas.jpg, atras.jpg, 2 portadas con otras combinaciones de color, `makerworld.md` (título, descripción en español e inglés, etiquetas, ajustes de impresión, tiempo y gramos estimados).
 
 ## Pendientes (tomar de arriba hacia abajo, 2 por vuelta)
-- [ ] 01 Corazón con huella chica y nombre (corazón 36 mm, aro de borde)
-- [ ] 02 Hueso premium (borde encastrado + nombre + huesito decorativo)
+- [ ] 02b Rehacer medalla LOLA y huella MILO con kit.build (control de paredes: dedos de la huella muy juntos) → mover a out/coleccion
 - [ ] 03 Cabeza de gato (con orejas y bigotes encastrados, nombre)
 - [ ] 04 Escudo / placa de policía "K9" con nombre (humor)
 - [ ] 05 Llavero huella chico para dueños (30 mm, "TE QUIERO" o nombre)
@@ -22,6 +22,8 @@ Reglas de todos los modelos:
 - [ ] 11 Nuevas ideas del nicho mascotas si se termina la lista (siempre 2D en capas, 2 colores)
 
 ## Hechos
+- [x] 01 Corazón LUNA (out/coleccion/01_corazon)
+- [x] 02 Hueso premium ROCKY (out/coleccion/02_hueso_premium)
 - [x] Prueba de tolerancias (out/test_tolerancia)
 - [x] Chapita hueso TOBY (out/chapita_hueso_TOBY)
 - [x] Medalla redonda LOLA (out/medalla_LOLA)

@@ -122,31 +122,17 @@ def _bridge(outer, hole):
     return np.concatenate([outer[:pi + 1], hole_seq, outer[pi:]])
 
 def earclip(outer, holes):
-    poly = outer
-    for h in sorted(holes, key=lambda h: -h[:, 0].max()):
-        poly = _bridge(poly, h)
-    pts = poly; idx = list(range(len(pts))); tris = []
-    def cross(o, a, b): return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-    guard = 0
-    i = 0
-    while len(idx) > 3 and guard < 50 * len(pts):
-        guard += 1
-        n = len(idx); i %= n
-        ia, ib, ic = idx[i - 1], idx[i], idx[(i + 1) % n]
-        A, B, C = pts[ia], pts[ib], pts[ic]
-        if cross(A, B, C) <= 1e-14:
-            i += 1; continue
-        P = pts[idx]
-        # puntos estrictamente dentro del triángulo (ignorando coincidencias)
-        d1 = (B[0] - A[0]) * (P[:, 1] - A[1]) - (B[1] - A[1]) * (P[:, 0] - A[0])
-        d2 = (C[0] - B[0]) * (P[:, 1] - B[1]) - (C[1] - B[1]) * (P[:, 0] - B[0])
-        d3 = (A[0] - C[0]) * (P[:, 1] - C[1]) - (A[1] - C[1]) * (P[:, 0] - C[0])
-        inside = (d1 >= -1e-12) & (d2 >= -1e-12) & (d3 >= -1e-12)
-        same = (np.all(np.isclose(P, A), 1) | np.all(np.isclose(P, B), 1) | np.all(np.isclose(P, C), 1))
-        if np.any(inside & ~same):
-            i += 1; continue
-        tris.append((ia, ib, ic)); idx.pop(i)
-    if len(idx) == 3: tris.append(tuple(idx))
+    from earcut import earcut
+    pts = np.concatenate([outer] + list(holes)) if holes else outer
+    data = pts.ravel().tolist(); hi = []; k = len(outer)
+    for h in holes: hi.append(k); k += len(h)
+    t = earcut(data, hi or None)
+    tris = []
+    for j in range(0, len(t), 3):
+        a, b, c = t[j], t[j + 1], t[j + 2]
+        A, B, C = pts[a], pts[b], pts[c]
+        if (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]) < 0: b, c = c, b
+        tris.append((a, b, c))
     return pts, tris
 
 # ---------------------------------------------------------------- pieza
