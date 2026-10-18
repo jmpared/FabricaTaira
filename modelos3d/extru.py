@@ -281,3 +281,23 @@ def closing(cv, field, r):
     m = field <= r
     d = (ndimage.distance_transform_edt(~m) - ndimage.distance_transform_edt(m)) * cv.res
     return d + r
+
+def write_3mf_assembled(path, parts, name="modelo"):
+    """un solo objeto con varias piezas (componentes) ya montadas: en Bambu Studio cada pieza toma su filamento"""
+    allV = np.vstack([V for _, V, _ in parts]); off = np.array([10 - allV[:, 0].min(), 10 - allV[:, 1].min(), -allV[:, 2].min()])
+    objs, comps = [], []
+    for i, (pname, V, F) in enumerate(parts, 1):
+        V = V + off
+        vs = "".join(f'<vertex x="{a:.4f}" y="{b:.4f}" z="{c:.4f}"/>' for a, b, c in V)
+        ts = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in F)
+        objs.append(f'<object id="{i}" name="{pname}" type="model"><mesh><vertices>{vs}</vertices><triangles>{ts}</triangles></mesh></object>')
+        comps.append(f'<component objectid="{i}"/>')
+    k = len(parts) + 1
+    objs.append(f'<object id="{k}" name="{name}" type="model"><components>{"".join(comps)}</components></object>')
+    model = ('<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="es-AR" '
+             'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><resources>'
+             + "".join(objs) + f'</resources><build><item objectid="{k}"/></build></model>')
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
+        z.writestr("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+        z.writestr("3D/3dmodel.model", model)
