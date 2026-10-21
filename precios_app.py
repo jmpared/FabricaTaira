@@ -7,13 +7,16 @@ Ningún cambio se publica directo: todo pasa por "propuestas" que el administrad
 import math
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 
 import pandas as pd
 import streamlit as st
+import requests
 from supabase import create_client
 
 import excel_precios as xl
+import pdf_catalogo as pdfc
 
 SUPABASE_URL = "https://gxnoakudooorcsnqcklm.supabase.co"
 SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd"
@@ -204,7 +207,7 @@ def pagina_lista():
            "En espera": st.column_config.NumberColumn(format="$ %.2f")}
     if not es_admin():
         st.dataframe(df.drop(columns=["✔", "Nuevo precio"]), hide_index=True, use_container_width=True, height=520, column_config=cfg)
-        st.caption("🔒 Solo el administrador puede cambiar precios. Para descargar la lista, andá a **Exportar Excel**.")
+        st.caption("🔒 Solo el administrador puede cambiar precios. Para descargar la lista, andá a **Exportar Excel / PDF**.")
         return
     st.caption("✏️ Escribí en **Nuevo precio** para cambiar uno por uno · ✔ tildá para usar una herramienta con varios a la vez.")
     clave = "lista_" + str(abs(hash((linea, tuple(cats), busca))))
@@ -287,7 +290,7 @@ def aplicar_redondeo(v, modo, sentido):
 
 
 def familia(nombre):
-    return re.sub(r"\s*(T\.\s*\d+|N°\s*\d+|[SML]|XL)\s*$", "", nombre.strip(), flags=re.I).strip()
+    return re.sub(r"\s+(T\.\s*\d+|N°\s*\d+|[SML]|XL)\s*$", "", nombre.strip(), flags=re.I).strip()
 
 
 def pagina_herramientas():
@@ -525,11 +528,34 @@ def pagina_calculadoras():
 
 
 # ---------------------------------------------------------------- exportar
+SITIO_FOTOS = "https://taira-pedidos.netlify.app/"
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False, max_entries=2000)
+def bajar_foto(ruta):
+    """Baja una foto del catálogo online y la achica para el PDF. Queda guardada 6 horas."""
+    if not ruta:
+        return None
+    url = ruta if ruta.startswith("http") else SITIO_FOTOS + ruta.lstrip("/")
+    try:
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+        return pdfc.achicar_foto(r.content)
+    except Exception:
+        return None
+
+
+def bajar_fotos(rutas):
+    rutas = [r for r in dict.fromkeys(rutas) if r]
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        return dict(zip(rutas, ex.map(bajar_foto, rutas)))
+
+
 def pagina_exportar():
-    st.title("📥 Exportar Excel")
+    st.title("📥 Exportar Excel o PDF")
     cat = catalogo()
-    tipo = st.radio("Tipo de archivo", ["🎨 Lista para clientes (con diseño)", "🛠️ Planilla de trabajo (para editar y volver a subir)"],
-                    key="e_tipo")
+    tipo = st.radio("Tipo de archivo", ["📄 Catálogo PDF para clientes (con fotos)", "🎨 Lista Excel para clientes (con diseño)",
+                                        "🛠️ Planilla de trabajo (para editar y volver a subir)"], key="e_tipo")
     c = st.columns([1.1, 2.5])
     linea = c[0].selectbox("Línea", ["Todas", "Fabricados", "Importados"], key="e_linea")
     cats_all = []
@@ -540,7 +566,38 @@ def pagina_exportar():
     prods = [p for p in cat if filtro_linea(p, linea) and (not cats or p.get("categoria") in cats)]
     st.caption(f"{len(prods)} productos")
     hoy = datetime.now().strftime("%d/%m/%Y")
-    if tipo.startswith("🎨"):
+    if tipo.startswith("📄"):
+        a, b = st.columns(2)
+        titulo = a.text_input("Título", value="Catálogo mayorista", key="p_titulo")
+        nota = b.text_input("Nota extra (opcional)", placeholder="Ej: Lista especial revendedores", key="p_nota")
+        d = st.columns(4)
+        desc = d[0].number_input("Descuento para este PDF %", min_value=0.0, max_value=90.0, value=0.0, step=1.0, key="p_desc",
+                                 help="Solo cambia el PDF, no los precios publicados.")
+        promo = d[1].checkbox("Precio promo 6+1", value=True, key="p_promo")
+        med = d[2].checkbox("Medidas", value=True, key="p_med")
+        con_fotos = d[3].checkbox("Con fotos", value=True, key="p_fotos", help="Sin fotos sale un PDF mucho más liviano.")
+        datos_p = [{"nombre": p["nombre"], "categoria": p.get("categoria"), "linea": p.get("linea"), "ancho": p.get("ancho"),
+                    "largo": p.get("largo"), "precio": num(p.get("precio_publicado")), "promo": p.get("promo"),
+                    "foto_url": p.get("foto_url")} for p in prods]
+        clave = (tuple(p["nombre"] for p in prods), titulo, nota, desc, promo, med, con_fotos)
+        if st.button("📄 Armar catálogo PDF", type="primary", disabled=not prods):
+            with st.spinner("Armando el catálogo… con fotos puede tardar un minuto la primera vez."):
+                fotos = bajar_fotos([p["foto_url"] for p in datos_p]) if con_fotos else None
+                ss.pdf_cat = (clave, pdfc.catalogo_pdf(datos_p, hoy, fotos, desc, promo, med, titulo, nota),
+                              sum(1 for v in (fotos or {}).values() if v is None))
+        if ss.get("pdf_cat") and ss.pdf_cat[0] == clave:
+            _, archivo, faltan = ss.pdf_cat
+            tam = f"{len(archivo) / 1e6:.1f} MB" if len(archivo) >= 1e6 else f"{len(archivo) / 1e3:.0f} KB"
+            st.success(f"Catálogo listo · {tam}")
+            if faltan:
+                st.warning(f"{faltan} fotos no se pudieron bajar del catálogo online; esas fichas salen sin foto.")
+            st.download_button("📥 Descargar catálogo PDF", archivo, file_name=f"Catalogo_TAIRA_{date.today():%d-%m-%Y}.pdf",
+                               mime="application/pdf", type="primary")
+        elif ss.get("pdf_cat"):
+            st.caption("Cambiaste opciones: volvé a tocar **Armar catálogo PDF**.")
+        st.caption("Fichas con foto, talles, medidas y precio, agrupadas por línea y categoría. Para mandar por WhatsApp o imprimir en A4. "
+                   "Toma los precios **publicados**.")
+    elif tipo.startswith("🎨"):
         a, b = st.columns(2)
         titulo = a.text_input("Título", value="Lista de precios mayorista", key="e_titulo")
         nota = b.text_input("Nota extra (opcional)", placeholder="Ej: Lista especial revendedores", key="e_nota")
@@ -787,7 +844,7 @@ PAGINAS = {
     "herramientas": st.Page(pagina_herramientas, title="Herramientas", icon="🧰", url_path="herramientas"),
     "aprobar": st.Page(pagina_aprobar, title="Revisar y aprobar", icon="✅", url_path="aprobar"),
     "importar": st.Page(pagina_importar, title="Importar Excel", icon="📤", url_path="importar"),
-    "exportar": st.Page(pagina_exportar, title="Exportar Excel", icon="📥", url_path="exportar"),
+    "exportar": st.Page(pagina_exportar, title="Exportar Excel / PDF", icon="📥", url_path="exportar"),
     "calculadoras": st.Page(pagina_calculadoras, title="Calculadoras", icon="🧮", url_path="calculadoras"),
     "historial": st.Page(pagina_historial, title="Historial", icon="📜", url_path="historial"),
 }
