@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TAIRA · Inicio</title>
+<meta name="theme-color" content="#d7141a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--rojo:#d7141a;--rojo-osc:#a50e13;--crema:#fff4d6;--crema2:#fde7ad;--tinta:#2b1d14;--gris:#7a6a5c;--blanco:#fffdf8;--linea:#efdfbf}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Nunito",system-ui,sans-serif;background:var(--crema);color:var(--tinta)}
+header{background:var(--rojo);color:#fff;text-align:center;padding:34px 16px 64px;position:relative;overflow:hidden}
+header:after{content:"";position:absolute;left:-10%;right:-10%;bottom:-48px;height:80px;background:var(--crema);border-radius:50%}
+.logo{font-family:"Fredoka",sans-serif;font-weight:700;font-size:56px;letter-spacing:6px;margin:0;line-height:1}
+.logo sup{font-size:18px;letter-spacing:0}
+.sub{font-weight:800;letter-spacing:1px;margin:8px 0 2px;font-size:14px}
+.hola{opacity:.9;font-size:14px;margin:0}
+main{max-width:980px;margin:-20px auto 0;padding:0 16px 40px;position:relative;z-index:1}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+a.card,button.card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:18px;align-items:center;background:var(--blanco);border:1px solid var(--linea);border-radius:22px;padding:22px;box-shadow:0 6px 18px rgba(120,60,0,.08);transition:transform .15s,box-shadow .15s,border-color .15s;min-height:132px}
+a.card:hover,button.card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(120,60,0,.14);border-color:var(--rojo)}
+a.card:focus-visible{outline:3px solid var(--rojo);outline-offset:3px}
+.ico{flex:0 0 74px;height:74px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px}
+.t{font-family:"Fredoka",sans-serif;font-size:22px;font-weight:600;margin:0 0 4px}
+.d{color:var(--gris);font-size:14px;line-height:1.4;margin:0}
+.tag{display:inline-block;margin-top:8px;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;background:var(--crema);color:var(--rojo-osc)}
+.tag.falta{background:#fff1cc;color:#7a5200}
+.c1 .ico{background:#fde2e2}.c2 .ico{background:#e3efe9}.c3 .ico{background:#fff1cc}.c4 .ico{background:#e7e4fb}
+.pie{margin-top:26px;text-align:center;color:var(--gris);font-size:13px}
+.pie button{background:none;border:0;color:var(--gris);text-decoration:underline;font:inherit;cursor:pointer}
+dialog{border:0;border-radius:20px;padding:22px;max-width:520px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(30,15,5,.55)}
+dialog h2{font-family:"Fredoka",sans-serif;margin:0 0 6px}
+dialog label{display:block;font-weight:800;font-size:14px;margin:14px 0 6px}
+dialog input{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--linea);font:inherit}
+dialog .bts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+dialog .bts button{border:0;border-radius:12px;padding:11px 18px;font:inherit;font-weight:800;cursor:pointer}
+.ok{background:var(--rojo);color:#fff}.cancel{background:var(--crema);color:var(--tinta)}
+</style>
+</head>
+<body>
+<header>
+  <h1 class="logo">TAIRA<sup>®</sup></h1>
+  <p class="sub">FÁBRICA Y DISTRIBUIDORA</p>
+  <p class="hola" id="hola">Panel del equipo</p>
+</header>
+<main>
+  <div class="grid">
+    <a class="card c1" href="./" target="_blank" rel="noopener">
+      <div class="ico">🛍️</div>
+      <div><p class="t">Catálogo online</p>
+        <p class="d">Lo que ven los clientes: productos, fotos, promos y pedido por WhatsApp.</p>
+        <span class="tag" id="nprod">Abrir catálogo</span></div>
+    </a>
+    <a class="card c2" data-app="fabrica" href="#" target="_blank" rel="noopener">
+      <div class="ico">🏭</div>
+      <div><p class="t">App de la fábrica</p>
+        <p class="d">Producción, stock de productos e insumos, ventas y reportes.</p>
+        <span class="tag">Abrir</span></div>
+    </a>
+    <a class="card c3" href="precios.html" target="_blank" rel="noopener">
+      <div class="ico">💲</div>
+      <div><p class="t">Precios</p>
+        <p class="d">Lista de precios con herramientas de aumento, calculadoras, Excel e historial.</p>
+        <span class="tag">Abrir</span></div>
+    </a>
+    <a class="card c4" href="taller.html" target="_blank" rel="noopener">
+      <div class="ico">🎙️</div>
+      <div><p class="t">Taller por voz</p>
+        <p class="d">Para la tablet: cargar producción, ventas e insumos hablando.</p>
+        <span class="tag">Abrir</span></div>
+    </a>
+  </div>
+  <p class="pie">Uso interno · no compartir con clientes · <button id="editar">Link de la fábrica</button></p>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h2>Link de la app de la fábrica</h2>
+    <div style="color:var(--gris);font-size:14px">Pegá la dirección de la app de Streamlit (la que aparece en el navegador al abrirla, termina en .streamlit.app). Queda guardada en este dispositivo.</div>
+    <label for="uFab">🏭 App de la fábrica</label>
+    <input id="uFab" type="text" inputmode="url" autocomplete="off" placeholder="https://….streamlit.app">
+    <div class="bts"><button class="cancel" value="cancel">Cancelar</button><button class="ok" id="guardar" value="ok">Guardar</button></div>
+  </form>
+</dialog>
+
+<script>
+/* ====== Links fijos (si se completan acá, valen para todos los dispositivos) ====== */
+const LINKS = {
+  fabrica: ""   // ej: "https://taira-fabrica.streamlit.app"
+};
+/* ================================================================================== */
+const SUPABASE_URL = "https://gxnoakudooorcsnqcklm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd";
+
+const leer = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+const guardar = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+const link = app => LINKS[app] || leer("taira_link_" + app);
+
+function pintar() {
+  document.querySelectorAll("[data-app]").forEach(a => {
+    const u = link(a.dataset.app), tag = a.querySelector(".tag");
+    a.href = u || "#";
+    tag.textContent = u ? "Abrir" : "Falta el link · tocá para cargarlo";
+    tag.classList.toggle("falta", !u);
+  });
+}
+document.querySelectorAll("[data-app]").forEach(a => a.addEventListener("click", e => {
+  if (!link(a.dataset.app)) { e.preventDefault(); abrir(); }
+}));
+const dlg = document.getElementById("dlg");
+function abrir() {
+  document.getElementById("uFab").value = link("fabrica");
+  dlg.showModal();
+}
+document.getElementById("editar").onclick = abrir;
+dlg.addEventListener("close", () => {
+  if (dlg.returnValue !== "ok") return;
+  const limpiar = v => { v = v.trim(); if (v && !/^https?:\/\//i.test(v)) v = "https://" + v; return v; };
+  guardar("taira_link_fabrica", limpiar(document.getElementById("uFab").value));
+  pintar();
+});
+
+const h = new Date().getHours();
+document.getElementById("hola").textContent = (h < 13 ? "Buen día" : h < 20 ? "Buenas tardes" : "Buenas noches") + " · Panel del equipo";
+
+fetch(SUPABASE_URL + "/rest/v1/lista_publica?select=id,sin_stock", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => {
+    const sin = d.filter(x => x.sin_stock).length;
+    document.getElementById("nprod").textContent = d.length + " productos publicados" + (sin ? " · " + sin + " sin stock" : "");
+  }).catch(() => {});
+pintar();
+</script>
+</body>
+</html>

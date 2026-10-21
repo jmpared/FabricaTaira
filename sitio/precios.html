@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TAIRA · Precios</title>
+<meta name="theme-color" content="#d7141a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="xlsx-mini.js"></script>
+<script src="catalogo-pdf.js"></script>
+<style>
+:root{--rojo:#d7141a;--rojo-osc:#a50e13;--crema:#fff4d6;--crema2:#fde7ad;--tinta:#2b1d14;--gris:#7a6a5c;--linea:#efdfbf;--blanco:#fffdf8;--verde:#17663a;--verde-c:#dff5e6;--rojo-c:#fde2e2;--ambar:#fff1cc}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Nunito",system-ui,sans-serif;background:var(--crema);color:var(--tinta);padding-bottom:110px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+
+/* encabezado */
+.top{background:var(--rojo);color:#fff;padding:14px 16px 0}
+.top .fila{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:1100px;margin:0 auto}
+.logo{font-family:"Fredoka",sans-serif;font-weight:700;font-size:30px;letter-spacing:4px;line-height:1}
+.logo small{font-family:"Nunito";font-size:14px;letter-spacing:.5px;font-weight:800;opacity:.9;margin-left:8px}
+.usr{font-size:12px;text-align:right;opacity:.95}
+.usr a,.usr button{color:#fff;background:none;border:0;padding:0;text-decoration:underline;font-size:12px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;max-width:1100px;margin:12px auto 0;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:0 0 auto;background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:12px 12px 0 0;padding:10px 14px;font-weight:800;font-size:14px;white-space:nowrap}
+nav.tabs button.on{background:var(--crema);color:var(--rojo)}
+nav.tabs .n{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--crema2);color:var(--rojo-osc);font-size:12px;margin-left:4px}
+main{max-width:1100px;margin:0 auto;padding:14px 16px}
+h2{font-family:"Fredoka",sans-serif;font-weight:600;font-size:22px;margin:6px 0 10px}
+.sub{color:var(--gris);font-size:13px}
+.card{background:var(--blanco);border:1px solid var(--linea);border-radius:16px;padding:14px}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:820px){.grid2{grid-template-columns:1fr 1fr}}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;background:var(--crema2);color:var(--tinta)}
+.btn.p{background:var(--rojo);color:#fff}
+.btn.v{background:#1fa855;color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.in{padding:10px 12px;border-radius:12px;border:1.5px solid var(--linea);background:#fff;font-size:15px;min-width:0}
+label.l{display:block;font-size:13px;font-weight:800;margin:10px 0 5px}
+.metrics{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.metric{background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:8px 12px;min-width:120px;flex:1}
+.metric b{display:block;font-family:"Fredoka",sans-serif;font-size:20px;font-weight:600}
+.metric span{font-size:12px;color:var(--gris)}
+
+/* filtros */
+.filtros{position:sticky;top:0;z-index:5;background:var(--crema);padding:8px 0 6px;border-bottom:1px solid var(--linea)}
+.frow{display:flex;gap:8px;flex-wrap:wrap}
+.frow .in{flex:1 1 140px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1.5px solid var(--linea);background:var(--blanco);border-radius:99px;padding:5px 11px;font-size:13px;font-weight:700}
+.chip.on{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.acciones{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:13px}
+.seg{display:inline-flex;background:var(--blanco);border:1px solid var(--linea);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;padding:6px 10px;font-weight:700;font-size:13px}
+.seg button.on{background:var(--tinta);color:#fff}
+
+/* lista */
+.cat h3{font-family:"Fredoka",sans-serif;font-weight:600;font-size:18px;margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+.cat h3 small{font-family:"Nunito";color:var(--gris);font-size:12px;font-weight:700}
+.cat h3 button{margin-left:auto;font-size:12px;border:0;background:none;color:var(--rojo);font-weight:800;text-decoration:underline}
+.linea-t{font-family:"Fredoka",sans-serif;color:var(--rojo);font-size:20px;margin:22px 0 0}
+.row{display:grid;grid-template-columns:28px 48px 1fr auto;gap:10px;align-items:center;background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:8px 10px;margin-bottom:6px}
+.row.sel{border-color:var(--rojo);box-shadow:0 0 0 1px var(--rojo) inset}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--rojo)}
+.ft{width:48px;height:48px;border-radius:10px;background:var(--crema2);object-fit:cover;display:flex;align-items:center;justify-content:center;font-family:"Fredoka";color:var(--rojo);font-size:20px;overflow:hidden}
+.ft img{width:100%;height:100%;object-fit:cover}
+.nm{font-weight:700;font-size:14px;line-height:1.25}
+.nm small{display:block;color:var(--gris);font-weight:600;font-size:12px}
+.pr{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.precio{font-weight:800;font-size:15px;white-space:nowrap;text-align:right}
+.precio .esp{display:block;font-size:11px;color:#7a5200;font-weight:700}
+.nuevo{white-space:nowrap;font-weight:800;font-size:14px;padding:3px 8px;border-radius:8px}
+.nuevo.up{background:var(--rojo-c);color:var(--rojo-osc)}
+.nuevo.down{background:var(--verde-c);color:var(--verde)}
+.nuevo small{font-weight:700;font-size:11px;margin-left:3px}
+.edit{width:104px;padding:7px 9px;border-radius:10px;border:1.5px dashed var(--linea);background:#fff;text-align:right;font-weight:700}
+.edit:focus{border-style:solid;border-color:var(--rojo);outline:0}
+@media(max-width:560px){.row{grid-template-columns:24px 40px 1fr}.ft{width:40px;height:40px}.pr{grid-column:2/4;justify-content:space-between}.edit{width:96px}}
+.vacio{padding:40px 10px;text-align:center;color:var(--gris)}
+
+/* barra inferior */
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--blanco);border-top:1px solid var(--linea);box-shadow:0 -6px 20px rgba(80,40,0,.12);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.barra .in2{max-width:1100px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.barra .txt{flex:1 1 200px;font-size:13px}
+.barra .txt b{font-size:15px}
+.barra .bts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* panel de herramientas */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(30,15,5,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--blanco);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+@media(min-width:820px){.sheet{align-items:center}.sheet .box{border-radius:22px}}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0 4px}
+.tool{border:1.5px solid var(--linea);background:#fff;border-radius:14px;padding:10px;text-align:left;font-size:13px;font-weight:700;line-height:1.25}
+.tool .e{font-size:22px;display:block;margin-bottom:2px}
+.tool.on{border-color:var(--rojo);background:#fff5f5}
+.params{margin-top:10px;border-top:1px dashed var(--linea);padding-top:6px}
+.inl{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.inl > div{flex:1 1 140px}
+.inl .in{width:100%}
+table.tr{width:100%;border-collapse:collapse;font-size:14px}
+table.tr td{padding:4px}
+table.tr .in{width:100%;padding:7px 9px}
+.nota{background:var(--ambar);border-radius:12px;padding:9px 11px;font-size:13px;margin-top:10px}
+
+/* tablas de aprobar / historial / comparación */
+.tabla{width:100%;border-collapse:collapse;font-size:14px;background:var(--blanco);border-radius:14px;overflow:hidden}
+.tabla th{background:var(--tinta);color:#fff;text-align:left;padding:8px;font-size:12px}
+.tabla td{padding:7px 8px;border-bottom:1px solid var(--linea);vertical-align:middle}
+.tabla td.n{text-align:right;white-space:nowrap}
+.var{font-weight:800;border-radius:8px;padding:2px 7px;white-space:nowrap}
+.var.up{background:var(--rojo-c);color:var(--rojo-osc)}
+.var.up.fuerte{background:#f8c4c4;color:#7a0b0e}
+.var.down{background:var(--verde-c);color:var(--verde)}
+.est{font-size:12px;font-weight:800;border-radius:8px;padding:2px 7px}
+.est.Sube{background:var(--rojo-c);color:var(--rojo-osc)}.est.Baja{background:var(--verde-c);color:var(--verde)}.est.Igual{background:#eee;color:#666}
+.est.revisar{background:var(--ambar);color:#7a5200}
+.scroll{overflow-x:auto;border-radius:14px;border:1px solid var(--linea)}
+details.lote{background:var(--blanco);border:1px solid var(--linea);border-radius:14px;margin-bottom:8px}
+details.lote summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+details.lote summary::-webkit-details-marker{display:none}
+details.lote .cuerpo{padding:0 10px 12px}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:60;background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+
+/* login */
+.login{max-width:380px;margin:12vh auto;padding:24px;background:var(--blanco);border:1px solid var(--linea);border-radius:20px;display:flex;flex-direction:column;gap:10px}
+.login h1{font-family:"Fredoka",sans-serif;color:var(--rojo);margin:0;letter-spacing:4px}
+.err{color:var(--rojo);font-size:14px;min-height:18px}
+</style>
+</head>
+<body>
+
+<section class="login" id="vLogin" hidden>
+  <h1>TAIRA</h1>
+  <div class="sub">Precios · ingresá con tu usuario de la app</div>
+  <input class="in" id="lEmail" type="email" placeholder="Correo" autocomplete="username">
+  <input class="in" id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button class="btn p" id="lBtn">Ingresar</button>
+  <div class="err" id="lErr"></div>
+</section>
+
+<div id="vApp" hidden>
+  <header class="top">
+    <div class="fila">
+      <div class="logo">TAIRA<small>PRECIOS</small></div>
+      <div class="usr"><span id="uNom"></span><br><a href="inicio.html">Panel</a> · <button id="salir">Salir</button></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="lista" class="on">📋 Precios</button>
+      <button data-tab="aprobar">✅ Por aprobar <span class="n" id="nPend">0</span></button>
+      <button data-tab="hist">📜 Historial</button>
+      <button data-tab="excel">📊 Excel y PDF</button>
+      <button data-tab="calc">🧮 Calculadoras</button>
+    </nav>
+  </header>
+
+  <!-- ================= LISTA ================= -->
+  <main id="tLista">
+    <div class="filtros">
+      <div class="frow">
+        <input class="in" id="fBusca" type="search" placeholder="🔎 Buscar producto…" style="flex:2 1 200px">
+        <select class="in" id="fLinea"><option value="">Todas las líneas</option><option value="fabricado">Fabricados</option><option value="importado">Importados</option></select>
+        <input class="in" id="fMin" inputmode="decimal" placeholder="Precio desde $" style="flex:1 1 110px">
+        <input class="in" id="fMax" inputmode="decimal" placeholder="hasta $" style="flex:1 1 90px">
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="acciones">
+        <span class="seg" id="ver"><button data-v="todos" class="on">Todos</button><button data-v="cambios">Con cambios</button><button data-v="sel">Tildados</button></span>
+        <button class="btn" id="tildarVis" style="padding:6px 10px;font-size:13px">☑ Tildar los visibles</button>
+        <button class="btn" id="destildar" style="padding:6px 10px;font-size:13px">Destildar</button>
+        <span class="sub" id="cuenta"></span>
+      </div>
+    </div>
+    <div id="lista"><div class="vacio">Cargando precios…</div></div>
+  </main>
+
+  <!-- ================= POR APROBAR ================= -->
+  <main id="tAprobar" hidden>
+    <h2>Precios esperando aprobación</h2>
+    <div class="sub">Nada cambia en el catálogo hasta que se aprueba. Destildá los que no quieras publicar.</div>
+    <div class="metrics" id="apMet"></div>
+    <div id="apAviso"></div>
+    <div class="acciones" style="margin:8px 0">
+      <button class="btn v" id="apAprobar">✅ Aprobar y publicar</button>
+      <button class="btn" id="apDescartar">🗑️ Descartar</button>
+      <span class="sub" id="apSoloAdmin" hidden>🔒 Solo el administrador puede aprobar.</span>
+    </div>
+    <div class="scroll"><table class="tabla" id="apTabla"></table></div>
+  </main>
+
+  <!-- ================= HISTORIAL ================= -->
+  <main id="tHist" hidden>
+    <h2>Historial de precios</h2>
+    <div class="frow" style="margin-bottom:8px">
+      <input class="in" id="hBusca" type="search" placeholder="🔎 Buscar producto en el historial…" style="flex:2 1 220px">
+      <button class="btn" id="hExcel">📥 Historial en Excel</button>
+    </div>
+    <div class="metrics" id="hMet"></div>
+    <div id="hLista"><div class="vacio">Cargando…</div></div>
+  </main>
+
+  <!-- ================= EXCEL ================= -->
+  <main id="tExcel" hidden>
+    <h2>Excel y PDF</h2>
+    <div class="card" style="margin-bottom:12px;border:2px solid var(--rojo)">
+      <h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600">📄 Catálogo PDF para clientes</h3>
+      <div class="sub">Fichas con foto, talles, medidas y precio, agrupadas por línea y categoría. Para mandar por WhatsApp o imprimir en A4. Usa los precios publicados y los filtros de la pestaña Precios (<span id="pdfFiltro"></span>).</div>
+      <div class="grid2" style="margin-top:4px">
+        <div><label class="l">Título</label><input class="in" id="pdfTitulo" value="Catálogo mayorista" style="width:100%"></div>
+        <div><label class="l">Nota (opcional)</label><input class="in" id="pdfNota" placeholder="Ej: Lista especial revendedores" style="width:100%"></div>
+      </div>
+      <div class="inl" style="margin-top:6px">
+        <div><label class="l">Descuento en este PDF %</label><input class="in" id="pdfDesc" inputmode="decimal" value="0"></div>
+        <div><label class="l">Incluir</label>
+          <label style="display:block;font-size:14px"><input type="checkbox" id="pdfFotos" checked> Fotos</label>
+          <label style="display:block;font-size:14px"><input type="checkbox" id="pdfPromo" checked> Precio con promo 6+1</label>
+          <label style="display:block;font-size:14px"><input type="checkbox" id="pdfMed" checked> Medidas</label></div>
+      </div>
+      <button class="btn p" id="pdfArmar" style="margin-top:12px;width:100%">📄 Descargar catálogo PDF</button>
+      <button class="btn v" id="pdfCompartir" style="margin-top:8px;width:100%" hidden>📲 Compartir (WhatsApp)</button>
+      <div class="sub" id="pdfEstado" style="margin-top:6px">El descuento solo cambia el PDF: los precios publicados no se tocan. Sin fotos sale mucho más liviano.</div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600">🎨 Lista de precios para clientes</h3>
+        <div class="sub">Con diseño TAIRA, agrupada por categoría, lista para mandar o imprimir en A4. Usa los filtros de la pestaña Precios (<span id="exFiltro"></span>).</div>
+        <label class="l">Título</label><input class="in" id="exTitulo" value="Lista de precios mayorista" style="width:100%">
+        <label class="l">Nota (opcional)</label><input class="in" id="exNota" placeholder="Ej: Lista especial revendedores" style="width:100%">
+        <div class="inl" style="margin-top:6px">
+          <div><label class="l">Descuento en esta lista %</label><input class="in" id="exDesc" inputmode="decimal" value="0"></div>
+          <div><label class="l">Columnas</label>
+            <label style="display:block;font-size:14px"><input type="checkbox" id="exPromo" checked> Precio con promo 6+1</label>
+            <label style="display:block;font-size:14px"><input type="checkbox" id="exMed" checked> Medidas</label></div>
+        </div>
+        <button class="btn p" id="exClientes" style="margin-top:12px;width:100%">📥 Descargar lista para clientes</button>
+        <div class="sub" style="margin-top:6px">El descuento solo cambia el archivo: los precios publicados no se tocan.</div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600">🛠️ Planilla de trabajo</h3>
+        <div class="sub">Trae una columna amarilla <b>Precio nuevo</b>: completala en tu compu y volvé a subirla abajo para comparar.</div>
+        <button class="btn" id="exPlanilla" style="margin-top:12px;width:100%">📥 Descargar planilla</button>
+        <hr style="border:0;border-top:1px dashed var(--linea);margin:16px 0">
+        <h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600">📤 Subir un Excel y comparar</h3>
+        <div class="sub">La planilla completada o tu Excel de siempre (columnas Producto y Precio). Te muestro qué sube y qué baja antes de tocar nada.</div>
+        <input type="file" id="imFile" accept=".xlsx" style="margin-top:10px;width:100%">
+      </div>
+    </div>
+    <div id="imRes" style="margin-top:14px"></div>
+  </main>
+
+  <!-- ================= CALCULADORAS ================= -->
+  <main id="tCalc" hidden>
+    <h2>Calculadoras</h2>
+    <div class="sub" style="margin-bottom:10px">Cuentas rápidas. No cambian ningún precio.</div>
+    <div class="grid2" id="calcs"></div>
+  </main>
+
+  <!-- barra inferior (pestaña Precios) -->
+  <div class="barra" id="barra">
+    <div class="in2">
+      <div class="txt" id="bTxt"></div>
+      <div class="bts">
+        <button class="btn p" id="bTools">🧰 Herramientas</button>
+        <button class="btn" id="bLimpiar" hidden>↺ Deshacer vista previa</button>
+        <button class="btn v" id="bEnviar" hidden>Enviar a aprobar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- panel de herramientas -->
+  <div class="sheet" id="sheet" hidden>
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0">🧰 Herramientas</h2>
+        <button class="btn" id="shCerrar">✕</button>
+      </div>
+      <div class="tools" id="tools"></div>
+      <div class="params" id="params"></div>
+      <div class="params">
+        <div class="inl">
+          <div id="alcBox"><label class="l">Aplicar a</label><select class="in" id="alc"></select></div>
+          <div><label class="l">Redondeo</label><select class="in" id="red">
+            <option value="0">Sin redondeo</option><option value="10" selected>Múltiplo de $10</option><option value="50">Múltiplo de $50</option>
+            <option value="100">Múltiplo de $100</option><option value="500">Múltiplo de $500</option><option value="t90">Terminar en 90</option><option value="t99">Terminar en 99</option></select></div>
+          <div><label class="l">Hacia</label><select class="in" id="redS"><option value="up">Arriba</option><option value="near">El más cercano</option><option value="down">Abajo</option></select></div>
+        </div>
+        <div id="shResumen" class="nota" hidden></div>
+        <div class="acciones" style="margin-top:12px;justify-content:flex-end">
+          <button class="btn p" id="shAplicar">Ver en la lista</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================== CONFIGURACIÓN ============================== */
+const SUPABASE_URL = "https://gxnoakudooorcsnqcklm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd";
+const ALERTA = 30;  // % de variación que se marca como "revisar"
+/* ========================================================================== */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pesos = v => v == null || isNaN(v) ? "—" : "$ " + nf.format(v);
+const pct = v => v == null || isNaN(v) ? "—" : (v > 0 ? "+" : "") + v.toFixed(1).replace(".", ",") + "%";
+const norm = s => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+function num(v) {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  let s = String(v).replace(/\$/g, "").replace(/\s/g, "");
+  if (!s || s === "-") return null;
+  if (s.includes(",") && s.includes(".")) s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  else if (s.includes(",")) s = s.replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  const n = Number(s); return isFinite(n) ? n : null;
+}
+const variacion = (a, n) => a ? (n / a - 1) * 100 : null;
+const fechaAR = ts => new Date(ts).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const diaAR = ts => new Date(ts).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "2-digit", month: "2-digit", year: "numeric" });
+function toast(t, ms = 3200) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+
+/* ============================== estado ============================== */
+const S = { sesion: null, admin: false, cat: [], porId: {}, ult: {}, hist: null, sel: new Set(), cambios: new Map(), cats: new Set(), ver: "todos", tool: "pct", tab: "lista" };
+
+/* ============================== Supabase ============================== */
+const guardar = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const leerLS = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+async function auth(tipo, cuerpo) {
+  const r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=" + tipo, { method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error_description || j.msg || "Error de acceso");
+  return { access: j.access_token, refresh: j.refresh_token, vence: Date.now() + (j.expires_in - 60) * 1000, email: j.user?.email || cuerpo.email };
+}
+async function token() {
+  if (Date.now() > S.sesion.vence) { const n = await auth("refresh_token", { refresh_token: S.sesion.refresh }); S.sesion = { ...S.sesion, ...n, email: S.sesion.email }; guardar("taira_precios", S.sesion); }
+  return S.sesion.access;
+}
+async function api(ruta, op = {}) {
+  const r = await fetch(SUPABASE_URL + ruta, { ...op, headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + await token(), "Content-Type": "application/json", ...(op.headers || {}) } });
+  const t = await r.text(); const j = t ? JSON.parse(t) : null;
+  if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Error " + r.status);
+  return j;
+}
+const rpc = (fn, args) => api("/rest/v1/rpc/" + fn, { method: "POST", body: JSON.stringify(args) });
+const usuario = () => { const e = (S.sesion?.email || "").split("@")[0]; return e.charAt(0).toUpperCase() + e.slice(1); };
+
+async function cargar() {
+  const [cat, ult] = await Promise.all([api("/rest/v1/catalogo?select=*&order=orden.asc"), api("/rest/v1/precios_ultimo_cambio?select=*")]);
+  S.cat = cat; S.porId = Object.fromEntries(cat.map(p => [p.id, p]));
+  S.ult = Object.fromEntries((ult || []).map(u => [u.catalogo_id, u.ultimo_cambio]));
+  S.hist = null;
+  for (const id of [...S.cambios.keys()]) if (!S.porId[id]) S.cambios.delete(id);
+  $("#nPend").textContent = cat.filter(p => p.precio_propuesto != null).length;
+}
+
+/* ============================== LISTA ============================== */
+const medida = p => [p.ancho, p.largo].filter(Boolean).join(" · ");
+function filtrados() {
+  const q = norm($("#fBusca").value), l = $("#fLinea").value, mn = num($("#fMin").value), mx = num($("#fMax").value);
+  return S.cat.filter(p => {
+    if (l && p.linea !== l) return false;
+    if (S.cats.size && !S.cats.has(p.categoria)) return false;
+    if (q && !norm(p.nombre + " " + p.categoria + " " + medida(p)).includes(q)) return false;
+    const pr = num(p.precio_publicado);
+    if (mn != null && (pr == null || pr < mn)) return false;
+    if (mx != null && mx > 0 && (pr == null || pr > mx)) return false;
+    return true;
+  });
+}
+function pintarChips() {
+  const l = $("#fLinea").value; const cats = [];
+  S.cat.forEach(p => { if ((!l || p.linea === l) && !cats.includes(p.categoria)) cats.push(p.categoria); });
+  for (const c of [...S.cats]) if (!cats.includes(c)) S.cats.delete(c);
+  $("#chips").innerHTML = `<button class="chip ${S.cats.size ? "" : "on"}" data-c="">Todas</button>` + cats.map(c => `<button class="chip ${S.cats.has(c) ? "on" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+}
+function htmlNuevo(p) {
+  const c = S.cambios.get(p.id); if (!c) return "";
+  const a = num(p.precio_publicado), v = variacion(a, c.nuevo);
+  return `<span class="nuevo ${c.nuevo >= (a || 0) ? "up" : "down"}" title="${esc(c.motivo)}">→ ${pesos(c.nuevo)}<small>${pct(v)}</small></span>`;
+}
+function htmlFila(p) {
+  const ini = esc((p.nombre || "?").charAt(0));
+  const foto = p.foto_url ? `<img src="${esc(p.foto_url)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${ini}'))">` : ini;
+  const c = S.cambios.get(p.id);
+  const ultimo = S.ult[p.id] ? "act. " + diaAR(S.ult[p.id]) : "carga inicial";
+  return `<div class="row ${S.sel.has(p.id) ? "sel" : ""}" data-id="${p.id}">
+    <input type="checkbox" ${S.sel.has(p.id) ? "checked" : ""} aria-label="Tildar">
+    <div class="ft">${foto}</div>
+    <div class="nm">${esc(p.nombre)}<small>${esc([medida(p), ultimo].filter(Boolean).join(" · "))}</small></div>
+    <div class="pr">
+      <div class="precio">${pesos(num(p.precio_publicado))}${p.precio_propuesto != null ? `<span class="esp">en espera ${pesos(num(p.precio_propuesto))}</span>` : ""}</div>
+      <span class="nv">${htmlNuevo(p)}</span>
+      <input class="edit" inputmode="decimal" placeholder="nuevo $" value="${c && c.motivo === "Cambio individual" ? nf.format(c.nuevo) : ""}" aria-label="Precio nuevo">
+    </div></div>`;
+}
+function pintarLista() {
+  let ps = filtrados();
+  if (S.ver === "cambios") ps = ps.filter(p => S.cambios.has(p.id));
+  if (S.ver === "sel") ps = ps.filter(p => S.sel.has(p.id));
+  $("#cuenta").textContent = ps.length + " productos";
+  if (!ps.length) { $("#lista").innerHTML = `<div class="vacio">No hay productos para mostrar.</div>`; return pintarBarra(); }
+  let h = "", lin = null, cat = null;
+  for (const p of ps) {
+    if (p.linea !== lin) { lin = p.linea; cat = null; h += `<div class="linea-t">${lin === "fabricado" ? "Fabricados por TAIRA" : "Importados"}</div>`; }
+    if (p.categoria !== cat) {
+      if (cat !== null) h += "</div>";
+      cat = p.categoria; const n = ps.filter(x => x.categoria === cat && x.linea === lin).length;
+      h += `<div class="cat"><h3>${esc(cat)} <small>${n}</small><button data-tcat="${esc(cat)}">tildar categoría</button></h3>`;
+    }
+    h += htmlFila(p);
+  }
+  $("#lista").innerHTML = h + "</div>";
+  pintarBarra();
+}
+function refrescarFila(id) { const el = $(`.row[data-id="${id}"]`); if (el) el.outerHTML = htmlFila(S.porId[id]); }
+function pintarBarra() {
+  const n = S.cambios.size, sel = S.sel.size;
+  let t = `<b>${sel}</b> tildados`;
+  if (n) {
+    const vs = [...S.cambios].map(([id, c]) => variacion(num(S.porId[id]?.precio_publicado), c.nuevo)).filter(v => v != null);
+    const prom = vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null;
+    t += ` · <b>${n}</b> precios nuevos en vista previa (promedio ${pct(prom)})`;
+  } else t += " · tildá productos y abrí <b>Herramientas</b>, o escribí un precio nuevo";
+  $("#bTxt").innerHTML = t;
+  $("#bLimpiar").hidden = !n; $("#bEnviar").hidden = !n;
+  $("#bEnviar").textContent = S.admin ? `Enviar ${n} a aprobar` : "🔒 Solo el administrador envía";
+  $("#bEnviar").disabled = !S.admin;
+}
+
+/* eventos de la lista */
+["#fBusca", "#fMin", "#fMax"].forEach(s => $(s).addEventListener("input", () => pintarLista()));
+$("#fLinea").addEventListener("change", () => { pintarChips(); pintarLista(); });
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  const c = b.dataset.c; if (!c) S.cats.clear(); else S.cats.has(c) ? S.cats.delete(c) : S.cats.add(c);
+  pintarChips(); pintarLista();
+});
+$("#ver").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.ver = b.dataset.v; $$("#ver button").forEach(x => x.classList.toggle("on", x === b)); pintarLista(); });
+$("#tildarVis").onclick = () => { $$("#lista .row").forEach(r => S.sel.add(+r.dataset.id)); pintarLista(); };
+$("#destildar").onclick = () => { S.sel.clear(); pintarLista(); };
+$("#lista").addEventListener("click", e => {
+  const tc = e.target.closest("[data-tcat]");
+  if (tc) { const c = tc.dataset.tcat; const vis = $$("#lista .row").map(r => +r.dataset.id).filter(id => S.porId[id].categoria === c); const todos = vis.every(id => S.sel.has(id)); vis.forEach(id => todos ? S.sel.delete(id) : S.sel.add(id)); pintarLista(); return; }
+  const r = e.target.closest(".row"); if (!r || e.target.closest(".edit")) return;
+  const id = +r.dataset.id; S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id);
+  r.classList.toggle("sel", S.sel.has(id)); r.querySelector("input[type=checkbox]").checked = S.sel.has(id); pintarBarra();
+});
+$("#lista").addEventListener("change", e => {
+  if (!e.target.classList.contains("edit")) return;
+  const id = +e.target.closest(".row").dataset.id, v = num(e.target.value);
+  if (v && v > 0) S.cambios.set(id, { nuevo: Math.round(v * 100) / 100, motivo: "Cambio individual" }); else S.cambios.delete(id);
+  const nv = e.target.closest(".row").querySelector(".nv"); nv.innerHTML = htmlNuevo(S.porId[id]); pintarBarra();
+});
+$("#lista").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || !e.target.classList.contains("edit")) return;
+  e.target.blur(); const filas = $$("#lista .edit"); const i = filas.indexOf(e.target); if (filas[i + 1]) filas[i + 1].focus();
+});
+$("#bLimpiar").onclick = () => { if (confirm("¿Borrar todos los precios de la vista previa?")) { S.cambios.clear(); pintarLista(); } };
+$("#bEnviar").onclick = enviar;
+
+async function enviar() {
+  if (!S.admin || !S.cambios.size) return;
+  const porMotivo = {};
+  for (const [id, c] of S.cambios) (porMotivo[c.motivo] = porMotivo[c.motivo] || []).push({ id, precio: c.nuevo });
+  const grandes = [...S.cambios].filter(([id, c]) => Math.abs(variacion(num(S.porId[id].precio_publicado), c.nuevo) || 0) >= ALERTA).length;
+  if (!confirm(`Se van a enviar ${S.cambios.size} precios a "Por aprobar".${grandes ? `\n⚠️ ${grandes} cambian ${ALERTA}% o más.` : ""}\nTodavía no se publican.`)) return;
+  try {
+    for (const [motivo, items] of Object.entries(porMotivo)) await rpc("proponer_precios", { p_items: items, p_motivo: motivo });
+    S.cambios.clear(); await cargar(); pintarLista(); toast("Enviado. Revisalo y aprobalo en «Por aprobar»."); irA("aprobar");
+  } catch (e) { alert("No se pudo enviar: " + e.message); }
+}
+
+/* ============================== HERRAMIENTAS ============================== */
+const TOOLS = [
+  { id: "pct", e: "📈", t: "Aumento o baja en %" },
+  { id: "monto", e: "➕", t: "Sumar o restar $" },
+  { id: "fijo", e: "🎯", t: "Precio fijo" },
+  { id: "tramos", e: "🪜", t: "Escalonado por rango de precio" },
+  { id: "infl", e: "📊", t: "Inflación acumulada" },
+  { id: "comision", e: "💳", t: "Recargo por comisión de cobro" },
+  { id: "talles", e: "📏", t: "Escalera de talles" },
+  { id: "igualar", e: "🔗", t: "Igualar a otro producto" },
+  { id: "red", e: "🔢", t: "Solo redondear" },
+];
+function abrirTools() {
+  $("#tools").innerHTML = TOOLS.map(t => `<button class="tool ${S.tool === t.id ? "on" : ""}" data-t="${t.id}"><span class="e">${t.e}</span>${t.t}</button>`).join("");
+  pintarParams(); $("#sheet").hidden = false;
+}
+$("#bTools").onclick = abrirTools;
+$("#shCerrar").onclick = () => $("#sheet").hidden = true;
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") $("#sheet").hidden = true; });
+$("#tools").addEventListener("click", e => { const b = e.target.closest(".tool"); if (!b) return; S.tool = b.dataset.t; $$(".tool").forEach(x => x.classList.toggle("on", x === b)); pintarParams(); });
+
+function familia(nombre) { return nombre.replace(/\s+(T\.\s*\d+|N°\s*\d+|XL|[SML])\s*$/i, "").trim(); }
+function familias() { const f = {}; S.cat.forEach(p => { const k = norm(familia(p.nombre)); (f[k] = f[k] || { nombre: familia(p.nombre), ps: [] }).ps.push(p); }); return Object.values(f).filter(x => x.ps.length > 1).sort((a, b) => a.nombre.localeCompare(b.nombre)); }
+
+function pintarParams() {
+  const v = id => `id="${id}"`;
+  const P = {
+    pct: `<label class="l">Porcentaje (negativo para bajar)</label><input class="in" ${v("pPct")} inputmode="decimal" value="10">`,
+    monto: `<label class="l">Monto en $ (negativo para restar)</label><input class="in" ${v("pMonto")} inputmode="decimal" value="500">`,
+    fijo: `<label class="l">Precio para todos los elegidos $</label><input class="in" ${v("pFijo")} inputmode="decimal" value="5000">`,
+    tramos: `<div class="sub">Por ejemplo: los productos baratos suben más que los caros. "Hasta" vacío = sin tope.</div>
+      <table class="tr" id="pTramos"><tr><td class="sub">Desde $</td><td class="sub">Hasta $</td><td class="sub">Aumento %</td></tr>
+      ${[[0, 5000, 15], [5000, 20000, 10], [20000, "", 8]].map(r => `<tr><td><input class="in" inputmode="decimal" value="${r[0]}"></td><td><input class="in" inputmode="decimal" value="${r[1]}"></td><td><input class="in" inputmode="decimal" value="${r[2]}"></td></tr>`).join("")}</table>
+      <button class="btn" id="pTramoMas" style="margin-top:6px;padding:6px 10px">+ Agregar tramo</button>`,
+    infl: `<label class="l">Inflación de cada mes (%), separados por punto y coma</label><input class="in" ${v("pInfl")} value="3,5; 2,7; 2,4" style="width:100%">
+      <label class="l">Trasladar a precios: <b id="pTrasV">100%</b></label><input type="range" ${v("pTras")} min="0" max="100" step="5" value="100" style="width:100%">
+      <div class="nota" id="pInflRes"></div>`,
+    comision: `<div class="sub">Sube los precios lo justo para que, después de la comisión de la plataforma, te quede el precio actual.</div>
+      <div class="inl"><div><label class="l">Medio de cobro</label><select class="in" ${v("pComP")}>
+        <option value="6.09">Pago Nube · 1 día (6,09%)</option><option value="4.39">Pago Nube · 7 días (4,39%)</option><option value="3.49">Pago Nube · 14 días (3,49%)</option><option value="2.97">Pago Nube · 30 días (2,97%)</option><option value="1.5">Transferencia Pago Nube (1,5%)</option><option value="">Otra</option></select></div>
+      <div><label class="l">Comisión %</label><input class="in" ${v("pCom")} inputmode="decimal" value="6.09"></div></div>
+      <label style="display:block;margin-top:8px;font-size:14px"><input type="checkbox" ${v("pComIva")} checked> La comisión se cobra + IVA (21%)</label>
+      <div class="nota" id="pComRes"></div>`,
+    talles: `<div class="sub">Ordena los precios de una familia: el primer talle a un precio y cada talle siguiente sube un % o un monto.</div>
+      <label class="l">Familia</label><select class="in" ${v("pFam")} style="width:100%"><option value="">Elegí…</option>${familias().map((f, i) => `<option value="${i}">${esc(f.nombre)} (${f.ps.length})</option>`).join("")}</select>
+      <div class="inl"><div><label class="l">Precio del primer talle $</label><input class="in" ${v("pBase")} inputmode="decimal"></div>
+      <div><label class="l">Cada talle sube</label><select class="in" ${v("pPasoT")}><option value="%">%</option><option value="$">$</option></select></div>
+      <div><label class="l">Cuánto</label><input class="in" ${v("pPaso")} inputmode="decimal" value="5"></div></div>`,
+    igualar: `<div class="sub">Pone a los elegidos el mismo precio que otro producto (por ejemplo, que todos los collares estampados valgan igual que los sublimados del mismo talle).</div>
+      <label class="l">Copiar el precio de</label><select class="in" ${v("pIgual")} style="width:100%"><option value="">Elegí un producto…</option>${S.cat.map(p => `<option value="${p.id}">${esc(p.nombre)}${medida(p) ? " · " + esc(medida(p)) : ""} — ${pesos(num(p.precio_publicado))}</option>`).join("")}</select>
+      <div class="inl"><div><label class="l">Y además, ajustar %</label><input class="in" ${v("pIgualPct")} inputmode="decimal" value="0"></div></div>`,
+    red: `<div class="sub">No cambia el precio, solo lo redondea con la opción de abajo.</div>`,
+  };
+  $("#params").innerHTML = P[S.tool];
+  $("#alcBox").style.display = S.tool === "talles" ? "none" : "";
+  const nf_ = filtrados().length;
+  $("#alc").innerHTML = `<option value="sel" ${S.sel.size ? "selected" : ""}>Los tildados (${S.sel.size})</option><option value="vis" ${S.sel.size ? "" : "selected"}>Todos los de la lista filtrada (${nf_})</option>`;
+  if (S.tool === "infl") { const f = () => { $("#pTrasV").textContent = $("#pTras").value + "%"; const k = factorInfl(); $("#pInflRes").innerHTML = `Inflación acumulada <b>${pct((k.factor - 1) * 100)}</b> (${k.meses.map(x => x.toString().replace(".", ",") + "%").join(" · ")}) · se aplica <b>${pct(k.aplica * 100)}</b>`; }; $("#pInfl").oninput = f; $("#pTras").oninput = f; f(); }
+  if (S.tool === "comision") { const f = () => { const r = recargoCom(); $("#pComRes").innerHTML = `Para recibir $10.000 hay que cobrar <b>${pesos(10000 * (1 + r))}</b> · recargo <b>${pct(r * 100)}</b>`; }; $("#pComP").onchange = () => { if ($("#pComP").value) $("#pCom").value = $("#pComP").value; f(); }; $("#pCom").oninput = f; $("#pComIva").onchange = f; f(); }
+  if (S.tool === "tramos") $("#pTramoMas").onclick = () => { const tr = document.createElement("tr"); tr.innerHTML = `<td><input class="in" inputmode="decimal"></td><td><input class="in" inputmode="decimal"></td><td><input class="in" inputmode="decimal"></td>`; $("#pTramos").appendChild(tr); };
+  if (S.tool === "talles") $("#pFam").onchange = () => { const f = familias()[+$("#pFam").value]; if (f) $("#pBase").value = nf.format(num(f.ps[0].precio_publicado) || 0); };
+  $("#shResumen").hidden = true;
+}
+function factorInfl() {
+  const t = $("#pInfl").value; const partes = /[;\n/]/.test(t) ? t.split(/[;\n/]+/) : (t.includes(", ") ? t.split(", ") : t.split(/\s+/));
+  const meses = partes.map(num).filter(x => x != null); const factor = meses.reduce((f, m) => f * (1 + m / 100), 1);
+  return { meses, factor, aplica: (factor - 1) * (+$("#pTras").value) / 100 };
+}
+function recargoCom() { const c = (num($("#pCom").value) || 0) * ($("#pComIva").checked ? 1.21 : 1) / 100; return c >= 1 ? 0 : 1 / (1 - c) - 1; }
+function redondear(v) {
+  const m = $("#red").value, s = $("#redS").value; if (v == null) return v;
+  const f = s === "up" ? x => Math.ceil(x - 1e-9) : s === "down" ? Math.floor : Math.round;
+  if (m === "0") return Math.round(v * 100) / 100;
+  if (m.startsWith("t")) { const fin = +m.slice(1); return Math.max(f((v - fin) / 100) * 100 + fin, fin); }
+  const p = +m; return Math.max(f(v / p) * p, p);
+}
+function calcular() {
+  // devuelve {objetivo:[productos], fn(a,p)->nuevo, motivo}
+  const alc = $("#alc").value, objetivo = S.tool === "talles" ? [] : (alc === "sel" ? S.cat.filter(p => S.sel.has(p.id)) : filtrados());
+  const desc = S.cats.size ? [...S.cats].join(", ") : ($("#fLinea").value ? ($("#fLinea").value === "fabricado" ? "fabricados" : "importados") : "");
+  const donde = alc === "sel" ? "selección" : (desc || "lista filtrada");
+  const t = S.tool;
+  if (t === "pct") { const x = num($("#pPct").value) || 0; return { objetivo, fn: a => a * (1 + x / 100), motivo: `${x > 0 ? "+" : ""}${x}% · ${donde}` }; }
+  if (t === "monto") { const x = num($("#pMonto").value) || 0; return { objetivo, fn: a => a + x, motivo: `${x >= 0 ? "+" : "−"}${pesos(Math.abs(x))} · ${donde}` }; }
+  if (t === "fijo") { const x = num($("#pFijo").value) || 0; return { objetivo, fn: () => x, motivo: `fijo ${pesos(x)} · ${donde}` }; }
+  if (t === "tramos") {
+    const tr = $$("#pTramos tr").slice(1).map(r => [...r.querySelectorAll("input")].map(i => num(i.value))).filter(r => r[2] != null);
+    return { objetivo, fn: a => { for (const [d, h, p] of tr) if (a >= (d || 0) && (!h || a < h)) return a * (1 + p / 100); return a; }, motivo: `escalonado ${tr.map(r => (r[2] > 0 ? "+" : "") + r[2] + "%").join("/")} · ${donde}` };
+  }
+  if (t === "infl") { const k = factorInfl(); return { objetivo, fn: a => a * (1 + k.aplica), motivo: `inflación ${pct(k.aplica * 100)} · ${donde}` }; }
+  if (t === "comision") { const r = recargoCom(); return { objetivo, fn: a => a * (1 + r), motivo: `recargo comisión ${pct(r * 100)} · ${donde}` }; }
+  if (t === "igualar") {
+    const ref = S.porId[+$("#pIgual").value]; const x = num($("#pIgualPct").value) || 0;
+    if (!ref) { toast("Elegí el producto del que se copia el precio."); return null; }
+    const base = num(ref.precio_publicado) * (1 + x / 100);
+    return { objetivo: objetivo.filter(p => p.id !== ref.id), fn: () => base, motivo: `igual a ${ref.nombre}${x ? ` ${x > 0 ? "+" : ""}${x}%` : ""} · ${donde}` };
+  }
+  if (t === "talles") {
+    const f = familias()[+$("#pFam").value]; if (!f) { toast("Elegí una familia."); return null; }
+    const base = num($("#pBase").value) || 0, paso = num($("#pPaso").value) || 0, tipo = $("#pPasoT").value; const precios = {}; let vv = base;
+    f.ps.forEach((p, i) => { if (i) vv = tipo === "%" ? vv * (1 + paso / 100) : vv + paso; precios[p.id] = vv; });
+    return { objetivo: f.ps, fn: (a, p) => precios[p.id], motivo: `escalera de talles ${f.nombre}: ${pesos(base)} y ${paso}${tipo} por talle` };
+  }
+  return { objetivo, fn: a => a, motivo: `redondeo · ${donde}` };
+}
+$("#shAplicar").onclick = () => {
+  const r = calcular(); if (!r) return;
+  if (!r.objetivo.length) { toast(S.tool === "talles" ? "Esa familia no tiene productos." : "No hay productos elegidos: tildá algunos o cambiá 'Aplicar a'."); return; }
+  let n = 0; const vs = [];
+  for (const p of r.objetivo) {
+    const a = num(p.precio_publicado); if (a == null && S.tool !== "fijo" && S.tool !== "igualar" && S.tool !== "talles") continue;
+    const nuevo = redondear(r.fn(a, p));
+    if (nuevo > 0 && (a == null || Math.abs(nuevo - a) >= 0.01)) { S.cambios.set(p.id, { nuevo, motivo: r.motivo }); n++; if (a) vs.push(variacion(a, nuevo)); }
+    else S.cambios.delete(p.id);
+  }
+  $("#sheet").hidden = true;
+  S.ver = "cambios"; $$("#ver button").forEach(x => x.classList.toggle("on", x.dataset.v === "cambios"));
+  pintarLista();
+  toast(n ? `Vista previa: ${n} precios (promedio ${pct(vs.reduce((a, b) => a + b, 0) / (vs.length || 1))}). Revisalos y tocá «Enviar a aprobar».` : "Con esa configuración no cambia ningún precio.", 4500);
+};
+
+/* ============================== POR APROBAR ============================== */
+const apSel = new Set();
+function htmlVar(v) { if (v == null) return "—"; return `<span class="var ${v >= 0 ? "up" : "down"} ${Math.abs(v) >= ALERTA ? "fuerte" : ""}">${pct(v)}</span>`; }
+function pintarAprobar() {
+  const ps = S.cat.filter(p => p.precio_propuesto != null);
+  $("#apSoloAdmin").hidden = S.admin; $("#apAprobar").disabled = $("#apDescartar").disabled = !S.admin || !ps.length;
+  if (!ps.length) { $("#apMet").innerHTML = ""; $("#apAviso").innerHTML = ""; $("#apTabla").innerHTML = `<tr><td class="vacio">No hay precios esperando aprobación. El catálogo está al día. ✔</td></tr>`; return; }
+  for (const id of [...apSel]) if (!ps.some(p => p.id === id)) apSel.delete(id);
+  if (!apSel.size) ps.forEach(p => apSel.add(p.id));
+  const vs = ps.map(p => variacion(num(p.precio_publicado), num(p.precio_propuesto))).filter(v => v != null);
+  const grandes = vs.filter(v => Math.abs(v) >= ALERTA).length;
+  $("#apMet").innerHTML = [["Propuestas", ps.length], ["Suben / bajan", `${vs.filter(v => v > 0).length} / ${vs.filter(v => v < 0).length}`], ["Variación promedio", pct(vs.reduce((a, b) => a + b, 0) / (vs.length || 1))], ["Mayor cambio", pct(Math.max(...vs.map(Math.abs), 0))]].map(([t, v]) => `<div class="metric"><span>${t}</span><b>${v}</b></div>`).join("");
+  $("#apAviso").innerHTML = grandes ? `<div class="nota">⚠️ ${grandes} productos cambian ${ALERTA}% o más (en rojo fuerte). Revisalos: puede ser un error de carga.</div>` : "";
+  $("#apTabla").innerHTML = `<tr><th><input type="checkbox" id="apTodos" ${apSel.size === ps.length ? "checked" : ""}></th><th>Producto</th><th>Actual</th><th>Nuevo</th><th>Cambio</th><th>Motivo</th></tr>` +
+    ps.map(p => { const a = num(p.precio_publicado), n = num(p.precio_propuesto); return `<tr><td><input type="checkbox" data-ap="${p.id}" ${apSel.has(p.id) ? "checked" : ""}></td><td>${esc(p.nombre)}<div class="sub">${esc(p.categoria)}${medida(p) ? " · " + esc(medida(p)) : ""}</div></td><td class="n">${pesos(a)}</td><td class="n"><b>${pesos(n)}</b></td><td class="n">${htmlVar(variacion(a, n))}</td><td class="sub">${esc(p.motivo_propuesta || "")}</td></tr>`; }).join("");
+  $("#apAprobar").textContent = `✅ Aprobar y publicar ${apSel.size}`; $("#apDescartar").textContent = `🗑️ Descartar ${apSel.size}`;
+}
+$("#apTabla").addEventListener("change", e => {
+  if (e.target.id === "apTodos") { const ps = S.cat.filter(p => p.precio_propuesto != null); apSel.clear(); if (e.target.checked) ps.forEach(p => apSel.add(p.id)); else apSel.add(-1); }
+  else if (e.target.dataset.ap) { const id = +e.target.dataset.ap; e.target.checked ? apSel.add(id) : apSel.delete(id); apSel.delete(-1); }
+  pintarAprobar();
+});
+$("#apAprobar").onclick = async () => {
+  const ids = [...apSel].filter(x => x > 0); if (!ids.length) return;
+  if (!confirm(`¿Publicar ${ids.length} precios? Se ven al instante en el catálogo online.`)) return;
+  try { const n = await rpc("aprobar_precios", { p_ids: ids, p_usuario: usuario() }); apSel.clear(); await cargar(); pintarAprobar(); toast(`¡Listo! Se publicaron ${n} precios.`); }
+  catch (e) { alert("No se pudo aprobar: " + e.message); }
+};
+$("#apDescartar").onclick = async () => {
+  const ids = [...apSel].filter(x => x > 0); if (!ids.length || !confirm(`¿Descartar ${ids.length} propuestas? Los precios publicados no cambian.`)) return;
+  try { await rpc("descartar_propuestas", { p_ids: ids }); apSel.clear(); await cargar(); pintarAprobar(); toast("Propuestas descartadas."); }
+  catch (e) { alert("No se pudo descartar: " + e.message); }
+};
+
+/* ============================== HISTORIAL ============================== */
+async function pintarHist() {
+  if (!S.hist) { $("#hLista").innerHTML = `<div class="vacio">Cargando…</div>`; try { S.hist = await api("/rest/v1/precios_historial?select=*&order=fecha.desc&limit=3000"); } catch (e) { $("#hLista").innerHTML = `<div class="vacio">No se pudo cargar: ${esc(e.message)}</div>`; return; } }
+  const q = norm($("#hBusca").value); const hs = S.hist.filter(h => !q || norm(h.nombre).includes(q));
+  if (!S.hist.length) { $("#hMet").innerHTML = ""; $("#hLista").innerHTML = `<div class="vacio">Todavía no se aprobó ningún cambio. Desde la primera aprobación, cada cambio queda acá con fecha, motivo y quién lo aprobó.</div>`; return; }
+  const dias = new Set(hs.map(h => diaAR(h.fecha)));
+  $("#hMet").innerHTML = [["Cambios", hs.length], ["Días con actualización", dias.size], ["Última", hs.length ? diaAR(hs[0].fecha) : "—"]].map(([t, v]) => `<div class="metric"><span>${t}</span><b>${v}</b></div>`).join("");
+  const lotes = []; const idx = {};
+  for (const h of hs) { const k = fechaAR(h.fecha) + "|" + (h.motivo || ""); if (!(k in idx)) { idx[k] = lotes.length; lotes.push({ fecha: h.fecha, motivo: h.motivo, por: h.aprobado_por, items: [] }); } lotes[idx[k]].items.push(h); }
+  $("#hLista").innerHTML = lotes.map((l, i) => {
+    const vs = l.items.map(h => variacion(num(h.precio_anterior), num(h.precio_nuevo))).filter(v => v != null); const prom = vs.reduce((a, b) => a + b, 0) / (vs.length || 1);
+    return `<details class="lote" ${q ? "open" : ""}><summary><b>📅 ${fechaAR(l.fecha)}</b><span>${esc(l.motivo || "sin motivo")}</span><span class="sub">${l.items.length} productos · aprobó ${esc(l.por || "—")}</span>${htmlVar(prom)}</summary>
+      <div class="cuerpo"><div class="scroll"><table class="tabla"><tr><th>Producto</th><th>Antes</th><th>Después</th><th>Cambio</th></tr>${l.items.map(h => `<tr><td>${esc(h.nombre)}</td><td class="n">${pesos(num(h.precio_anterior))}</td><td class="n"><b>${pesos(num(h.precio_nuevo))}</b></td><td class="n">${htmlVar(variacion(num(h.precio_anterior), num(h.precio_nuevo)))}</td></tr>`).join("")}</table></div>
+      ${S.admin ? `<button class="btn" data-deshacer="${i}" style="margin-top:8px">↩️ Deshacer esta actualización</button>` : ""}</div></details>`;
+  }).join("");
+  $("#hLista").onclick = e => {
+    const b = e.target.closest("[data-deshacer]"); if (!b) return; const l = lotes[+b.dataset.deshacer]; let n = 0, salt = 0;
+    for (const h of l.items) { const p = S.porId[h.catalogo_id]; if (!p) continue; if (Math.abs(num(p.precio_publicado) - num(h.precio_nuevo)) > 0.005) { salt++; continue; } S.cambios.set(p.id, { nuevo: num(h.precio_anterior), motivo: `Deshacer: ${fechaAR(l.fecha)} · ${l.motivo || ""}` }); n++; }
+    irA("lista"); S.ver = "cambios"; $$("#ver button").forEach(x => x.classList.toggle("on", x.dataset.v === "cambios")); pintarLista();
+    toast(`Vista previa: ${n} precios vuelven al valor anterior${salt ? ` (${salt} ya tuvieron otro cambio y no se tocan)` : ""}. Revisalos y enviá a aprobar.`, 5000);
+  };
+}
+$("#hBusca").addEventListener("input", pintarHist);
+
+/* ============================== EXCEL ============================== */
+const ROJO = "D7141A", ROJO_OSC = "A50E13", CREMA = "FFF6E3", CREMA2 = "FDECC8", TINTA = "2B1D14", GRIS = "7A6A5C";
+const hoyTxt = () => new Date().toLocaleDateString("es-AR");
+const hoyArch = () => new Date().toISOString().slice(0, 10);
+function descFiltro() { const p = []; if ($("#fLinea").value) p.push($("#fLinea").value === "fabricado" ? "fabricados" : "importados"); if (S.cats.size) p.push([...S.cats].join(", ")); if ($("#fBusca").value) p.push(`"${$("#fBusca").value}"`); return p.length ? p.join(" · ") : "todos los productos"; }
+
+function excelClientes() {
+  const ps = filtrados(); if (!ps.length) return toast("No hay productos con esos filtros.");
+  const desc = num($("#exDesc").value) || 0, promo = $("#exPromo").checked, med = $("#exMed").checked;
+  const L = new XLMini.Libro(), h = L.hoja("Lista de precios");
+  h.grilla = false; h.ajustar = true; h.pie = "&CTAIRA · Lista de precios · Página &P de &N";
+  const cols = ["Producto"].concat(med ? ["Medida"] : [], ["Precio unitario"], promo ? ["Con promo 6+1 (c/u)"] : []);
+  const anchos = { "Producto": 50, "Medida": 22, "Precio unitario": 17, "Con promo 6+1 (c/u)": 19 };
+  h.anchos = cols.map(c => anchos[c]); const n = cols.length;
+  const banda = (txt, alto, st) => { const r = h.fila([txt].concat(Array(n - 1).fill(null)), Array(n).fill(L.estilo(st)), alto); h.combinar(r, 0, n - 1); };
+  banda("TAIRA", 44, { b: 1, sz: 30, color: "FFFFFF", bg: ROJO, align: "center" });
+  banda("FÁBRICA Y DISTRIBUIDORA", 18, { b: 1, sz: 11, color: "FFFFFF", bg: ROJO, align: "center" });
+  banda(`${$("#exTitulo").value || "Lista de precios"} · Veterinarias y pet shops`, 24, { b: 1, sz: 13, color: TINTA, bg: CREMA2, align: "center" });
+  banda(`Vigente desde el ${hoyTxt()}${desc ? ` · Incluye ${desc}% de descuento` : ""}`, 18, { i: 1, sz: 10, color: GRIS, bg: CREMA2, align: "center" });
+  banda("Envío gratis en Misiones desde $150.000 · a todo el país desde $500.000", 18, { b: 1, sz: 10, color: ROJO_OSC, bg: CREMA, align: "center" });
+  if (promo) banda("PROMO en fabricados: llevando 6 del mismo producto y talle, 1 va de regalo (colores surtidos)", 18, { b: 1, sz: 10, color: TINTA, bg: CREMA, align: "center" });
+  banda("Pedidos por WhatsApp +54 9 3741 40-0146 · Pedí online: taira-pedidos.netlify.app" + ($("#exNota").value ? " · " + $("#exNota").value : ""), 18, { sz: 10, color: TINTA, bg: CREMA, align: "center" });
+  h.fila([]);
+  const sCab = L.estilo({ b: 1, sz: 9, color: GRIS }), sCabR = L.estilo({ b: 1, sz: 9, color: GRIS, align: "right" }), sCabC = L.estilo({ b: 1, sz: 9, color: GRIS, align: "center" });
+  const sCat = L.estilo({ b: 1, sz: 12, color: ROJO, borde: { bottom: "medium", color: ROJO } });
+  for (const [clave, titulo] of [["fabricado", "FABRICADOS POR TAIRA"], ["importado", "PRODUCTOS IMPORTADOS"]]) {
+    const g = ps.filter(p => p.linea === clave); if (!g.length) continue;
+    banda(titulo, 26, { b: 1, sz: 13, color: "FFFFFF", bg: ROJO_OSC, align: "left" });
+    const cats = [...new Set(g.map(p => p.categoria))];
+    for (const c of cats) {
+      const r = h.fila([c].concat(Array(n - 1).fill(null)), Array(n).fill(sCat), 22); h.combinar(r, 0, n - 1);
+      h.fila(cols, cols.map((x, j) => j === 0 ? sCab : x === "Medida" ? sCabC : sCabR));
+      g.filter(p => p.categoria === c).forEach((p, k) => {
+        const bg = k % 2 ? CREMA : "FFFFFF", b = { bottom: "thin", color: "EAD7B0" };
+        let pr = num(p.precio_publicado); pr = pr == null ? null : Math.round(pr * (1 - desc / 100) * 100) / 100;
+        const vals = [p.nombre], est = [L.estilo({ sz: 10, color: TINTA, bg, borde: b })];
+        if (med) { vals.push(medida(p)); est.push(L.estilo({ sz: 10, color: TINTA, bg, borde: b, align: "center" })); }
+        vals.push(pr == null ? "Consultar" : pr); est.push(L.estilo({ b: 1, sz: 10, color: TINTA, bg, borde: b, align: "right", fmt: '"$" #,##0.00' }));
+        if (promo) { vals.push(pr != null && p.promo ? Math.round(pr * 6 / 7 * 100) / 100 : null); est.push(L.estilo({ sz: 10, color: "17663A", bg, borde: b, align: "right", fmt: '"$" #,##0.00' })); }
+        h.fila(vals, est);
+      });
+      h.fila([]);
+    }
+  }
+  const r = h.fila(["Los precios están sujetos a modificaciones. Para más descuentos y formas de pago consultá con el vendedor."].concat(Array(n - 1).fill(null)), L.estilo({ i: 1, sz: 9, color: GRIS, wrap: 1 }), 30); h.combinar(r, 0, n - 1);
+  XLMini.descargar(L.blob(), `Lista_precios_TAIRA_${hoyArch()}.xlsx`);
+}
+function tablaSimple(L, nombre, cols, filas, op = {}) {
+  const h = L.hoja(nombre); h.congelar = 1; h.anchos = op.anchos || cols.map(() => 16);
+  const cab = L.estilo({ b: 1, color: "FFFFFF", bg: ROJO, align: "center", wrap: 1 }); h.fila(cols, cab, 30);
+  const borde = { bottom: "thin", color: "E8D9BC" };
+  filas.forEach(f => {
+    const bg = op.color ? op.color(f) : null;
+    h.fila(f.vals, f.vals.map((v, j) => L.estilo({ sz: 10, bg: (op.resaltar === j ? "FFF6C2" : bg) || undefined, borde, fmt: (op.moneda || []).includes(j) ? '"$" #,##0.00' : (op.pct || []).includes(j) ? '+0.0"%";-0.0"%";0"%"' : undefined, align: typeof v === "number" ? "right" : undefined })));
+  });
+  h.filtro = `A1:${XLMini.colL(cols.length - 1)}${filas.length + 1}`;
+  return h;
+}
+function excelPlanilla() {
+  const ps = filtrados(); if (!ps.length) return toast("No hay productos con esos filtros.");
+  const L = new XLMini.Libro();
+  tablaSimple(L, "Precios", ["ID TAIRA", "Producto", "Categoría", "Línea", "Medida", "Precio actual", "Últ. cambio", "Precio nuevo"],
+    ps.map(p => ({ vals: [p.id, p.nombre, p.categoria, p.linea === "fabricado" ? "Fabricado" : "Importado", medida(p), num(p.precio_publicado), S.ult[p.id] ? diaAR(S.ult[p.id]) : "Carga inicial", null] })),
+    { anchos: [10, 48, 26, 12, 20, 15, 14, 15], moneda: [5, 7], resaltar: 7 });
+  const ins = L.hoja("Instrucciones"); ins.anchos = [110];
+  ["Cómo usar este archivo", `Lista de precios TAIRA al ${hoyTxt()}.`, "Escribí el valor en la columna amarilla «Precio nuevo» y dejá vacías las filas que no cambian.", "No borres ni cambies la columna ID TAIRA: se usa para reconocer cada producto.", "Después subilo en Precios › Excel › «Subir un Excel y comparar»."].forEach((t, i) => ins.fila([t], L.estilo(i ? { sz: 11 } : { b: 1, sz: 12, color: "FFFFFF", bg: ROJO }), i ? 20 : 26));
+  XLMini.descargar(L.blob(), `Planilla_precios_${hoyArch()}.xlsx`);
+}
+$("#exClientes").onclick = excelClientes;
+
+/* ============================== CATÁLOGO PDF ============================== */
+let PDF_LISTO = null;
+async function catalogoPDF(compartir) {
+  const ps = filtrados(); if (!ps.length) return toast("No hay productos con esos filtros.");
+  const btn = $("#pdfArmar"), est = $("#pdfEstado"), conFotos = $("#pdfFotos").checked;
+  btn.disabled = true; $("#pdfCompartir").hidden = true;
+  try {
+    let fotos = null, faltan = 0;
+    if (conFotos) {
+      est.textContent = "Preparando fotos…";
+      fotos = await CatalogoPDF.bajarFotos(ps.map(p => p.foto_url), (h, t) => { est.textContent = `Preparando fotos… ${h} de ${t}`; });
+      faltan = [...fotos.values()].filter(v => !v).length;
+    }
+    est.textContent = "Armando el PDF…";
+    await new Promise(r => setTimeout(r, 30));
+    const datos = ps.map(p => ({ nombre: p.nombre, categoria: p.categoria, linea: p.linea, ancho: p.ancho, largo: p.largo,
+      precio: num(p.precio_publicado), promo: p.promo, foto_url: p.foto_url }));
+    const bytes = CatalogoPDF.armar(datos, { titulo: $("#pdfTitulo").value.trim() || "Catálogo mayorista", nota: $("#pdfNota").value.trim(),
+      descuento: num($("#pdfDesc").value) || 0, promo: $("#pdfPromo").checked, medida: $("#pdfMed").checked, fotos, fecha: hoyTxt() });
+    const nombre = `Catalogo_TAIRA_${hoyArch()}.pdf`, blob = new Blob([bytes], { type: "application/pdf" });
+    PDF_LISTO = new File([blob], nombre, { type: "application/pdf" });
+    const tam = bytes.length >= 1e6 ? (bytes.length / 1e6).toFixed(1).replace(".", ",") + " MB" : Math.round(bytes.length / 1e3) + " KB";
+    est.textContent = `✅ Catálogo listo: ${ps.length} productos · ${tam}` + (faltan ? ` · ${faltan} fotos no se pudieron cargar (esas fichas salen sin foto)` : "");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    try { if (navigator.canShare && navigator.canShare({ files: [PDF_LISTO] })) $("#pdfCompartir").hidden = false; } catch (e) {}
+  } catch (e) {
+    console.error(e); est.textContent = "No se pudo armar el PDF: " + (e.message || e); toast("No se pudo armar el PDF.");
+  } finally { btn.disabled = false; }
+}
+$("#pdfArmar").onclick = () => catalogoPDF();
+$("#pdfCompartir").onclick = async () => {
+  if (!PDF_LISTO) return;
+  try { await navigator.share({ files: [PDF_LISTO], title: "Catálogo TAIRA" }); } catch (e) { /* cancelado */ }
+};
+$("#exPlanilla").onclick = excelPlanilla;
+$("#hExcel").onclick = async () => {
+  if (!S.hist) await pintarHist(); if (!S.hist?.length) return toast("Todavía no hay historial.");
+  const L = new XLMini.Libro();
+  tablaSimple(L, "Historial", ["Fecha", "Producto", "Precio anterior", "Precio nuevo", "Variación %", "Motivo", "Aprobó"],
+    S.hist.map(h => ({ vals: [fechaAR(h.fecha), h.nombre, num(h.precio_anterior), num(h.precio_nuevo), variacion(num(h.precio_anterior), num(h.precio_nuevo)), h.motivo, h.aprobado_por] })),
+    { anchos: [18, 48, 15, 15, 12, 40, 14], moneda: [2, 3], pct: [4] });
+  XLMini.descargar(L.blob(), `Historial_precios_${hoyArch()}.xlsx`);
+};
+
+/* importar y comparar */
+let ULTIMA = null;
+function extraer(hojas) {
+  // Devuelve [{id, nombre, medidas:[], precio}] desde la planilla (ID TAIRA) o desde tablas con columnas Producto / Precio
+  const out = [];
+  for (const hj of hojas) {
+    const F = hj.filas; let col = {}; // col -> {hdrRow, cols}
+    for (let r = 0; r < F.length; r++) {
+      const fila = F[r] || [];
+      const ns = fila.map(norm);
+      const iniProd = ns.map((v, i) => ["producto", "nombre", "descripcion", "articulo"].includes(v) ? i : -1).filter(i => i >= 0);
+      if (iniProd.length && ns.some(v => v.startsWith("precio") || v === "id taira")) {
+        // fila de encabezado: definir bloques
+        iniProd.forEach((c, k) => {
+          const fin = k + 1 < iniProd.length ? iniProd[k + 1] : fila.length;
+          const desde = k ? Math.max(iniProd[k - 1] + 1, c - 2) : Math.max(0, c - 2);
+          const busca = (pred, izq = false) => { for (let j = izq ? desde : c; j < fin; j++) if (ns[j] && pred(ns[j])) return j; return -1; };
+          let precio = busca(v => v === "precio nuevo" || v === "nuevo precio");
+          const conNuevo = precio >= 0;
+          if (precio < 0) precio = busca(v => v.startsWith("precio") && !v.includes("promo") && !v.includes("actual"));
+          col[c] = { precio, conNuevo, id: busca(v => v === "id taira", true), meds: ["medida", "ancho", "largo"].map(x => busca(v => v === x)).filter(j => j >= 0) };
+        });
+        continue;
+      }
+      for (const c in col) {
+        const b = col[c], nombre = fila[c]; if (nombre == null || b.precio < 0) continue;
+        const precio = num(fila[b.precio]);
+        if (precio == null) continue;   // filas sin precio (títulos, "consultar"): no son cambios
+        out.push({ id: b.id >= 0 ? num(fila[b.id]) : null, nombre: String(nombre).trim(), medidas: b.meds.map(j => fila[j]).filter(x => x != null && x !== ""), precio, conNuevo: b.conNuevo });
+      }
+    }
+  }
+  return out;
+}
+function comparar(filas) {
+  const porNombre = {}; S.cat.forEach(p => (porNombre[norm(p.nombre)] = porNombre[norm(p.nombre)] || []).push(p));
+  const res = [], usados = {};
+  for (const f of filas) {
+    let p = f.id ? S.porId[f.id] : null;
+    if (!p) {
+      let cs = porNombre[norm(f.nombre)] || [];
+      if (cs.length > 1 && f.medidas.length) { const m = new Set(f.medidas.map(norm)); const g = cs.filter(c => m.has(norm(c.ancho)) || m.has(norm(c.largo))); if (g.length === 1) cs = g; }
+      if (cs.length === 1) p = cs[0]; else if (cs.length > 1) { res.push({ nombre: f.nombre, nuevo: f.precio, estado: "Repetido" }); continue; }
+    }
+    if (!p) { if (f.precio != null) res.push({ nombre: f.nombre, nuevo: f.precio, estado: "No encontrado" }); continue; }
+    if (f.precio == null) { res.push({ p, nombre: p.nombre, estado: "Sin precio" }); continue; }
+    usados[p.id] = (usados[p.id] || 0) + 1;
+    const a = num(p.precio_publicado), nuevo = Math.round(f.precio * 100) / 100;
+    const estado = a == null ? "Sube" : Math.abs(nuevo - a) < 0.011 ? "Igual" : nuevo > a ? "Sube" : "Baja";
+    res.push({ p, nombre: p.nombre, actual: a, nuevo, estado, v: variacion(a, nuevo) });
+  }
+  res.forEach(r => { if (r.p && usados[r.p.id] > 1) r.estado = "Repetido"; });
+  return res;
+}
+$("#imFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $("#imRes").innerHTML = `<div class="card">Leyendo <b>${esc(f.name)}</b>…</div>`;
+  try {
+    const hojas = await XLMini.leer(f); const filas = extraer(hojas);
+    if (!filas.length) { $("#imRes").innerHTML = `<div class="nota">No encontré columnas <b>Producto</b> y <b>Precio</b> (o la columna «Precio nuevo» está vacía). Si es la planilla descargada de acá, completá la columna amarilla y volvé a subirla.</div>`; return; }
+    ULTIMA = { nombre: f.name, res: comparar(filas) }; pintarImport();
+  } catch (err) { $("#imRes").innerHTML = `<div class="nota">No pude leer el archivo: ${esc(err.message)}</div>`; }
+  e.target.value = "";
+});
+function pintarImport(filtro = "cambios") {
+  const R = ULTIMA.res, cuenta = k => R.filter(r => r.estado === k).length, rev = R.filter(r => ["No encontrado", "Repetido", "Sin precio"].includes(r.estado));
+  const cambian = R.filter(r => r.estado === "Sube" || r.estado === "Baja"), vs = cambian.map(r => r.v).filter(v => v != null);
+  const vista = filtro === "cambios" ? cambian : filtro === "revisar" ? rev : R;
+  $("#imRes").innerHTML = `<div class="card"><h3 style="margin:0;font-family:Fredoka;font-weight:600">Comparación de «${esc(ULTIMA.nombre)}»</h3>
+    <div class="metrics">${[["Suben", cuenta("Sube")], ["Bajan", cuenta("Baja")], ["Sin cambio", cuenta("Igual")], ["A revisar", rev.length], ["Variación promedio", pct(vs.reduce((a, b) => a + b, 0) / (vs.length || 1))]].map(([t, v]) => `<div class="metric"><span>${t}</span><b>${v}</b></div>`).join("")}</div>
+    ${rev.length ? `<div class="nota">${rev.length} filas no se pudieron emparejar o no tienen precio (en amarillo): no se van a cargar.</div>` : ""}
+    <div class="acciones" style="margin:10px 0"><span class="seg" id="imVer"><button data-f="cambios" class="${filtro === "cambios" ? "on" : ""}">Solo cambios</button><button data-f="todo" class="${filtro === "todo" ? "on" : ""}">Todo</button><button data-f="revisar" class="${filtro === "revisar" ? "on" : ""}">A revisar</button></span>
+      <button class="btn" id="imExcel">📥 Comparación en Excel</button>
+      <button class="btn p" id="imLlevar" ${cambian.length ? "" : "disabled"}>Llevar ${cambian.length} cambios a la vista previa</button></div>
+    <div class="scroll"><table class="tabla"><tr><th>Producto</th><th>Actual</th><th>Nuevo</th><th>Cambio</th><th>Estado</th></tr>
+    ${vista.slice(0, 600).map(r => `<tr><td>${esc(r.nombre)}</td><td class="n">${pesos(r.actual)}</td><td class="n"><b>${pesos(r.nuevo)}</b></td><td class="n">${htmlVar(r.v)}</td><td><span class="est ${["Sube", "Baja", "Igual"].includes(r.estado) ? r.estado : "revisar"}">${r.estado}</span></td></tr>`).join("") || `<tr><td colspan="5" class="vacio">Nada para mostrar.</td></tr>`}</table></div></div>`;
+  $("#imVer").onclick = e => { const b = e.target.closest("button"); if (b) pintarImport(b.dataset.f); };
+  $("#imLlevar").onclick = () => { cambian.forEach(r => S.cambios.set(r.p.id, { nuevo: r.nuevo, motivo: `Excel: ${ULTIMA.nombre}` })); irA("lista"); S.ver = "cambios"; $$("#ver button").forEach(x => x.classList.toggle("on", x.dataset.v === "cambios")); pintarLista(); toast(`${cambian.length} precios en vista previa. Revisalos y enviá a aprobar.`, 4500); };
+  $("#imExcel").onclick = () => {
+    const L = new XLMini.Libro(), color = { Sube: "FDE2E2", Baja: "DFF5E6", Igual: "F1F1F1" };
+    tablaSimple(L, "Comparación", ["Producto", "Categoría", "Precio actual", "Precio nuevo", "Diferencia $", "Variación %", "Estado"],
+      R.map(r => ({ estado: r.estado, vals: [r.nombre, r.p?.categoria || "", r.actual ?? null, r.nuevo ?? null, r.actual != null && r.nuevo != null ? Math.round((r.nuevo - r.actual) * 100) / 100 : null, r.v ?? null, r.estado] })),
+      { anchos: [48, 26, 15, 15, 14, 12, 14], moneda: [2, 3, 4], pct: [5], color: f => color[f.estado] || "FFF1CC" });
+    XLMini.descargar(L.blob(), `Comparacion_precios_${hoyArch()}.xlsx`);
+  };
+}
+
+/* ============================== CALCULADORAS ============================== */
+const CALC = [
+  { t: "💰 Tengo el costo → ¿a cuánto vendo?", h: `<div class="inl"><div><label class="l">Costo $</label><input class="in" data-k="c" value="1000"></div><div><label class="l">Quiero ganar</label><select class="in" data-k="m"><option value="mk">Markup % (sobre costo)</option><option value="mg">Margen % (sobre precio)</option></select></div><div><label class="l">%</label><input class="in" data-k="p" value="40"></div></div>`,
+    f: v => { const c = num(v.c) || 0, p = num(v.p) || 0; if (v.m === "mg" && p >= 100) return "El margen tiene que ser menor a 100%"; const pr = v.m === "mk" ? c * (1 + p / 100) : c / (1 - p / 100); return `Precio de venta <b>${pesos(pr)}</b> · ganancia ${pesos(pr - c)}`; } },
+  { t: "📐 Tengo costo y precio → ¿cuánto gano?", h: `<div class="inl"><div><label class="l">Costo $</label><input class="in" data-k="c" value="1000"></div><div><label class="l">Precio $</label><input class="in" data-k="p" value="1500"></div></div>`,
+    f: v => { const c = num(v.c), p = num(v.p); if (!c || !p) return "—"; return `Ganancia <b>${pesos(p - c)}</b> · markup <b>${pct((p / c - 1) * 100)}</b> · margen <b>${((1 - c / p) * 100).toFixed(1).replace(".", ",")}%</b>`; } },
+  { t: "💳 Comisión de cobro (Pago Nube, etc.)", h: `<div class="inl"><div><label class="l">Quiero recibir $</label><input class="in" data-k="n" value="10000"></div><div><label class="l">Comisión %</label><input class="in" data-k="c" value="6,09"></div><div><label class="l">+ IVA</label><select class="in" data-k="i"><option value="1">Sí</option><option value="0">No</option></select></div></div>`,
+    f: v => { const n = num(v.n) || 0, c = (num(v.c) || 0) * (v.i === "1" ? 1.21 : 1) / 100; if (c >= 1) return "—"; const cob = n / (1 - c); return `Cobrar <b>${pesos(cob)}</b> · la plataforma se lleva ${pesos(cob - n)} · recargo <b>${pct((cob / n - 1) * 100)}</b>`; } },
+  { t: "🎁 Promo 6+1 / 10+2", h: `<div class="inl"><div><label class="l">Precio de lista $</label><input class="in" data-k="p" value="3000"></div><div><label class="l">Promo</label><select class="in" data-k="t"><option value="6">6+1</option><option value="10">10+2</option></select></div><div><label class="l">Quiero que c/u quede en $</label><input class="in" data-k="o" value="2500"></div></div>`,
+    f: v => { const p = num(v.p) || 0, [paga, lleva] = v.t === "6" ? [6, 7] : [10, 12], o = num(v.o) || 0; return `Paga ${pesos(p * paga)} por ${lleva} · cada una <b>${pesos(p * paga / lleva)}</b> · descuento equivalente <b>${((1 - paga / lleva) * 100).toFixed(1).replace(".", ",")}%</b><br>Para que c/u quede en ${pesos(o)}, la lista tiene que ser <b>${pesos(o * lleva / paga)}</b>`; } },
+  { t: "🧾 IVA", h: `<div class="inl"><div><label class="l">Monto $</label><input class="in" data-k="m" value="10000"></div><div><label class="l">Alícuota</label><select class="in" data-k="a"><option>21</option><option>10.5</option><option>27</option></select></div><div><label class="l">El monto es</label><select class="in" data-k="s"><option value="sin">Sin IVA</option><option value="con">Con IVA</option></select></div></div>`,
+    f: v => { const m = num(v.m) || 0, a = +v.a; return v.s === "sin" ? `Con IVA <b>${pesos(m * (1 + a / 100))}</b> · IVA ${pesos(m * a / 100)}` : `Sin IVA <b>${pesos(m / (1 + a / 100))}</b> · IVA ${pesos(m - m / (1 + a / 100))}`; } },
+  { t: "📈 Variación entre dos precios", h: `<div class="inl"><div><label class="l">Antes $</label><input class="in" data-k="a" value="1000"></div><div><label class="l">Ahora $</label><input class="in" data-k="b" value="1150"></div></div>`,
+    f: v => { const a = num(v.a), b = num(v.b); return a ? `Variación <b>${pct((b / a - 1) * 100)}</b> · diferencia ${pesos(b - a)}` : "—"; } },
+  { t: "📦 Precio por unidad de un pack", h: `<div class="inl"><div><label class="l">Precio del pack $</label><input class="in" data-k="p" value="12000"></div><div><label class="l">Unidades</label><input class="in" data-k="u" value="12"></div></div>`,
+    f: v => { const p = num(v.p) || 0, u = num(v.u) || 0; return u ? `Cada unidad <b>${pesos(p / u)}</b>` : "—"; } },
+];
+function pintarCalcs() {
+  $("#calcs").innerHTML = CALC.map((c, i) => `<div class="card" data-calc="${i}"><h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600;font-size:17px">${c.t}</h3>${c.h}<div class="nota res"></div></div>`).join("");
+  $$("[data-calc]").forEach(card => { const run = () => { const v = {}; card.querySelectorAll("[data-k]").forEach(i => v[i.dataset.k] = i.value); card.querySelector(".res").innerHTML = CALC[+card.dataset.calc].f(v); }; card.addEventListener("input", run); card.addEventListener("change", run); run(); });
+}
+
+/* ============================== pestañas, login, inicio ============================== */
+function irA(tab) {
+  S.tab = tab;
+  $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  ["lista", "aprobar", "hist", "excel", "calc"].forEach(t => $("#t" + { lista: "Lista", aprobar: "Aprobar", hist: "Hist", excel: "Excel", calc: "Calc" }[t]).hidden = t !== tab);
+  $("#barra").hidden = tab !== "lista";
+  if (tab === "aprobar") pintarAprobar();
+  if (tab === "hist") pintarHist();
+  if (tab === "excel") { $("#exFiltro").textContent = descFiltro(); $("#pdfFiltro").textContent = descFiltro(); }
+  window.scrollTo(0, 0);
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) irA(b.dataset.tab); });
+$("#salir").onclick = () => { if (S.cambios.size && !confirm("Tenés precios en vista previa sin enviar. ¿Salir igual?")) return; guardar("taira_precios", null); location.reload(); };
+window.addEventListener("beforeunload", e => { if (S.cambios.size) { e.preventDefault(); e.returnValue = ""; } });
+
+async function entrar() {
+  $("#lErr").textContent = "";
+  try { S.sesion = await auth("password", { email: $("#lEmail").value.trim(), password: $("#lPass").value }); guardar("taira_precios", S.sesion); await iniciar(); }
+  catch (e) { $("#lErr").textContent = "Usuario o contraseña incorrectos."; }
+}
+$("#lBtn").onclick = entrar; $("#lPass").addEventListener("keydown", e => { if (e.key === "Enter") entrar(); });
+
+async function iniciar() {
+  try { await cargar(); }
+  catch (e) { guardar("taira_precios", null); S.sesion = null; $("#vLogin").hidden = false; $("#vApp").hidden = true; $("#lErr").textContent = "La sesión venció, ingresá de nuevo."; return; }
+  try { S.admin = !!(await rpc("es_admin_taira", {})); } catch (e) { S.admin = false; }
+  $("#vLogin").hidden = true; $("#vApp").hidden = false;
+  $("#uNom").textContent = usuario() + (S.admin ? " · admin" : " · solo lectura");
+  pintarChips(); pintarLista(); pintarCalcs();
+}
+S.sesion = leerLS("taira_precios");
+if (S.sesion) iniciar(); else $("#vLogin").hidden = false;
+</script>
+</body>
+</html>

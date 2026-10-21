@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TAIRA · Taller</title>
+<meta name="theme-color" content="#1b120c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--rojo:#d7141a;--fondo:#1b120c;--panel:#2a1d14;--linea:#3d2b1e;--texto:#fff4e3;--gris:#b8a593;--verde:#27c26a;--ambar:#ffb020;--rojo-c:#ff6b6b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Nunito",system-ui,sans-serif;background:var(--fondo);color:var(--texto);display:flex;flex-direction:column}
+button{font:inherit;cursor:pointer}
+.barra{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--linea)}
+.logo{font-family:"Fredoka",sans-serif;font-weight:700;font-size:26px;letter-spacing:3px;color:var(--rojo)}
+.logo small{font-family:"Nunito";font-size:13px;letter-spacing:0;color:var(--gris);font-weight:700;margin-left:6px}
+.usr{font-size:13px;color:var(--gris);text-align:right}
+.usr button{background:none;border:0;color:var(--gris);text-decoration:underline;font-size:12px;padding:0}
+
+main{flex:1;display:grid;grid-template-columns:1fr;gap:16px;padding:16px 18px;max-width:1100px;width:100%;margin:0 auto}
+@media(min-width:900px){main{grid-template-columns:1.3fr 1fr}}
+
+.oreja{background:var(--panel);border:1px solid var(--linea);border-radius:22px;padding:22px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.mic{width:150px;height:150px;border-radius:50%;border:0;background:#4a3527;color:#fff;font-size:58px;display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s;box-shadow:0 0 0 0 rgba(215,20,26,.5)}
+.mic.escucha{background:var(--rojo);animation:latido 1.6s infinite}
+.mic.atento{background:var(--ambar);animation:latido .9s infinite}
+.mic.habla{background:#6b4b37}
+@keyframes latido{0%{box-shadow:0 0 0 0 rgba(215,20,26,.55)}70%{box-shadow:0 0 0 28px rgba(215,20,26,0)}100%{box-shadow:0 0 0 0 rgba(215,20,26,0)}}
+.estado{font-family:"Fredoka",sans-serif;font-size:24px;font-weight:600}
+.ayuda{color:var(--gris);font-size:15px;max-width:520px}
+.oido{min-height:28px;font-size:18px;color:var(--gris);font-style:italic}
+
+.confirma{display:none;width:100%;background:#3a2617;border:2px solid var(--ambar);border-radius:18px;padding:18px}
+.confirma.on{display:block}
+.confirma .q{font-size:22px;font-weight:800;margin-bottom:14px}
+.confirma .bts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.si,.no{border:0;border-radius:14px;padding:16px 30px;font-size:20px;font-weight:800;color:#fff}
+.si{background:var(--verde)} .no{background:#6b4b37}
+.opciones{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.opciones button{background:#4a3527;border:0;color:#fff;border-radius:12px;padding:12px;font-size:17px;font-weight:700}
+
+.escribir{display:flex;gap:8px;width:100%}
+.escribir input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid var(--linea);background:#140d08;color:var(--texto);font:inherit;font-size:16px}
+.escribir button{background:#4a3527;color:#fff;border:0;border-radius:12px;padding:0 16px;font-weight:800}
+.modo{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--gris)}
+
+.lado{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--linea);border-radius:18px;padding:16px}
+.card h2{font-family:"Fredoka",sans-serif;font-size:18px;margin:0 0 10px;font-weight:600}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto}
+.log li{border-left:4px solid var(--linea);padding:6px 10px;font-size:15px;line-height:1.35}
+.log li.ok{border-color:var(--verde)} .log li.err{border-color:var(--rojo-c)} .log li.av{border-color:var(--ambar)}
+.log time{display:block;font-size:12px;color:var(--gris)}
+.ej{margin:0;padding-left:18px;color:var(--gris);font-size:14px;line-height:1.6}
+.ej b{color:var(--texto)}
+
+/* Login */
+.login{max-width:380px;margin:12vh auto;padding:24px;background:var(--panel);border:1px solid var(--linea);border-radius:20px;display:flex;flex-direction:column;gap:12px}
+.login h1{font-family:"Fredoka",sans-serif;color:var(--rojo);margin:0;letter-spacing:3px}
+.login input{padding:12px 14px;border-radius:12px;border:1px solid var(--linea);background:#140d08;color:var(--texto);font:inherit;font-size:16px}
+.login button{background:var(--rojo);color:#fff;border:0;border-radius:12px;padding:13px;font-weight:800;font-size:16px}
+.login .err{color:var(--rojo-c);font-size:14px;min-height:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<section class="login" id="vLogin" hidden>
+  <h1>TAIRA</h1>
+  <div style="color:var(--gris)">Taller · ingresá con tu usuario de la app</div>
+  <input id="lEmail" type="email" placeholder="Correo" autocomplete="username">
+  <input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password">
+  <button id="lBtn">Ingresar</button>
+  <div class="err" id="lErr"></div>
+</section>
+
+<div id="vApp" hidden style="display:contents">
+  <div class="barra">
+    <div class="logo">TAIRA<small>Taller por voz</small></div>
+    <div class="usr"><span id="uNombre"></span><br><button id="salir">cerrar sesión</button></div>
+  </div>
+  <main>
+    <section class="oreja">
+      <button class="mic" id="mic" aria-label="Activar escucha">🎙️</button>
+      <div class="estado" id="estado">Tocá el micrófono para empezar</div>
+      <div class="ayuda" id="ayuda">Decí <b>“Taira”</b> y lo que pasó. Por ejemplo: <b>“Taira, se fabricaron 50 collares lisos talle 3”</b>.</div>
+      <div class="oido" id="oido"></div>
+      <div class="confirma" id="confirma">
+        <div class="q" id="cTexto"></div>
+        <div class="bts" id="cBts"><button class="si" id="cSi">✔ Sí, cargar</button><button class="no" id="cNo">✖ No</button></div>
+        <div class="opciones" id="cOpc"></div>
+      </div>
+      <div class="escribir">
+        <input id="txt" placeholder="…o escribí la orden acá" autocomplete="off">
+        <button id="txtBtn">Enviar</button>
+      </div>
+      <label class="modo"><input type="checkbox" id="siempre" checked> Escucha permanente (sin tocar la pantalla)</label>
+    </section>
+    <aside class="lado">
+      <div class="card">
+        <h2>Lo que se cargó hoy</h2>
+        <ul class="log" id="log"></ul>
+      </div>
+      <div class="card">
+        <h2>Qué le podés decir</h2>
+        <ul class="ej">
+          <li><b>Taira, se fabricaron 50 collares lisos talle 3</b></li>
+          <li><b>Taira, se vendieron 20 bozales toro</b></li>
+          <li><b>Taira, llegaron 100 metros de cinta lisa 20</b></li>
+          <li><b>Taira, entraron 500 hebillas 20 simple</b></li>
+          <li><b>Taira, ¿cuánto hay de collar liso talle 4?</b></li>
+          <li><b>Taira, ¿cuánta cinta lisa 25 queda?</b></li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+/* ===================== CONFIGURACIÓN ===================== */
+const SUPABASE_URL = "https://gxnoakudooorcsnqcklm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CVNOChVw7tkKeC60qSHvWQ_3bTVbIMd";
+const TIEMPO_CONFIRMAR = 15; // segundos para responder "sí" o "no"
+/* ========================================================= */
+
+// PARSER-INICIO ---------------------------------------------------------------
+const PALABRA_CLAVE = /\b(taira|tayra|taila|tahira|thaira|taira's|tai ra|taina|taíra)\b/;
+const VERBOS = {
+  produccion: /\b(fabric\w*|produj\w*|produc\w*|hic\w*|termin\w*|arm\w*|cos\w*|confeccion\w*|hecho|hechos|hechas)\b/,
+  venta: /\b(vend\w*|sali\w*|entreg\w*|despach\w*|llevaron|retir\w*)\b/,
+  ingreso: /\b(lleg\w*|compr\w*|ingres\w*|entr(o|aron|a)|recib\w*|repus\w*|repon\w*|carg\w* de insumo)\b/,
+  consulta: /\b(cuant[oa]s?|cuanto|stock de|hay de|queda[n]?|tenemos)\b/,
+};
+const SI = /\b(si|sii|dale|confirmo|confirma|correcto|ok|okey|okay|afirmativo|exacto|claro|bueno|cargalo|cargar|carga|va|perfecto)\b/;
+const NO = /\b(no|cancel\w*|negativo|para|frena|anula\w*|borra\w*|nada|error|mal)\b/;
+const STOP = new Set("de del la el los las un una uno con y se que a al en por para me nos le les fueron fue son hoy ahi recien acaba acabamos acaban ya hay tenemos stock queda quedan cuanto cuanta cuantos cuantas mas este esta estos estas su sus".split(" "));
+
+const UNIDADES_N = {cero:0,un:1,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,diecisiete:17,dieciocho:18,diecinueve:19,veinte:20,veintiuno:21,veintiun:21,veintiuna:21,veintidos:22,veintitres:23,veinticuatro:24,veinticinco:25,veintiseis:26,veintisiete:27,veintiocho:28,veintinueve:29};
+const DECENAS_N = {treinta:30,cuarenta:40,cincuenta:50,sesenta:60,setenta:70,ochenta:80,noventa:90};
+const CENTENAS_N = {cien:100,ciento:100,doscientos:200,doscientas:200,trescientos:300,trescientas:300,cuatrocientos:400,cuatrocientas:400,quinientos:500,quinientas:500,seiscientos:600,seiscientas:600,setecientos:700,setecientas:700,ochocientos:800,ochocientas:800,novecientos:900,novecientas:900};
+
+function normalizar(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/(\d)[.,](\d{3})\b/g,"$1$2")          // 1.000 -> 1000
+    .replace(/\bt\.?\s?(\d)/g,"talle $1")             // T.3 -> talle 3
+    .replace(/(\d+)([a-z]+)/g,"$1 $2").replace(/([a-z]+)(\d+)/g,"$1 $2")
+    .replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+}
+function esNumPal(w){ return w in UNIDADES_N || w in DECENAS_N || w in CENTENAS_N || w==="mil"; }
+// Convierte palabras a números: "cincuenta y dos" -> 52, "ciento veinte" -> 120, "dos mil" -> 2000
+function palabrasANumeros(texto){
+  const t = texto.split(" "), out = [];
+  for(let i=0;i<t.length;){
+    if(!esNumPal(t[i])){ out.push(t[i]); i++; continue; }
+    // "un/una" solo cuenta como número si no le sigue otro número
+    let total=0, actual=0, j=i, usado=false;
+    while(j<t.length){
+      const w=t[j];
+      if(w in CENTENAS_N){ actual+=CENTENAS_N[w]; }
+      else if(w in DECENAS_N){ actual+=DECENAS_N[w]; }
+      else if(w in UNIDADES_N){ actual+=UNIDADES_N[w]; }
+      else if(w==="mil"){ total+=(actual||1)*1000; actual=0; }
+      else if(w==="y" && j+1<t.length && (t[j+1] in UNIDADES_N) && usado){ j++; continue; }
+      else break;
+      usado=true; j++;
+    }
+    out.push(String(total+actual)); i=j;
+  }
+  return out.join(" ");
+}
+// Raíz simple: saca plural y vocal final para que "dobles"="doble", "lisos"="liso"="lisa", "collares"="collar"
+function singular(w){
+  if(/^\d+$/.test(w) || w.length<=3 || CLAVES.has(w)) return w;
+  if(w.endsWith("ces")) w=w.slice(0,-3)+"z";
+  else if(/[rlndj]es$/.test(w)) w=w.slice(0,-2);
+  else if(w.endsWith("s")) w=w.slice(0,-1);
+  if(w.length>3 && /[aeo]$/.test(w)) w=w.slice(0,-1);
+  return w;
+}
+const CLAVES = new Set(["talle","metro","centimetro","unidad"]);
+const SINONIMOS = {talle:"talle",talla:"talle",numero:"talle",nro:"talle",n:"talle",mosqueton:"mosqueton",correas:"correa",simples:"simple",hojalillos:"hojalillo",ojalillo:"hojalillo",ojalillos:"hojalillo",ojal:"hojalillo",metro:"metro",metros:"metro",mts:"metro",mt:"metro",m:"metro",cm:"centimetro",centimetros:"centimetro",centimetro:"centimetro",unidades:"unidad",unidad:"unidad",u:"unidad"};
+function tokens(texto){
+  return palabrasANumeros(normalizar(texto)).split(" ").filter(Boolean)
+    .map(w=>SINONIMOS[w]||w).filter(w=>!STOP.has(w)).map(singular);
+}
+// Palabras y números que identifican un ítem (producto o insumo)
+function firma(nombre){
+  const tk = tokens(nombre).filter(w=>w!=="talle");
+  return { palabras: tk.filter(w=>!/^\d+$/.test(w)), numeros: tk.filter(w=>/^\d+$/.test(w)) };
+}
+function detectarAccion(t){
+  if(VERBOS.consulta.test(t)) return "consulta";
+  if(VERBOS.ingreso.test(t)) return "ingreso";
+  if(VERBOS.venta.test(t)) return "venta";
+  if(VERBOS.produccion.test(t)) return "produccion";
+  return null;
+}
+// Puntaje de coincidencia entre lo dicho y un ítem
+function puntuar(dicho, item){
+  const f = item._firma || (item._firma = firma(item.nombre));
+  if(!f.palabras.length) return 0;
+  // los números del ítem (talle, ancho) tienen que estar dichos, y no puede sobrar un talle distinto
+  if(f.numeros.some(n=>!dicho.numeros.includes(n))) return 0;
+  if(dicho.talle!=null && !f.numeros.includes(String(dicho.talle))) return 0;
+  let hit=0; f.palabras.forEach(w=>{ if(dicho.palabras.includes(w)) hit++; });
+  if(!hit) return 0;
+  const cobertura = hit / f.palabras.length;                    // cuánto del nombre se dijo
+  const extra = dicho.palabras.filter(w=>!f.palabras.includes(w)).length; // palabras dichas que no están
+  return cobertura - extra*0.08 + (f.numeros.length && dicho.numeros.length ? 0.05 : 0);
+}
+function elegir(dicho, lista){
+  const r = lista.map(it=>({it, p:puntuar(dicho,it)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p);
+  if(!r.length || r[0].p<0.5) return {estado:"no"};
+  // si lo dicho no nombra todo el producto, preguntamos entre los que también podrían ser
+  let cand = r[0].p>=1 ? r.filter(x=>x.p>=r[0].p-0.02) : r.filter(x=>x.p>=0.3 && x.p>=r[0].p-0.2);
+  // nombres repetidos en la base (ej. "cinta nato 40" y "Cinta nato 40") cuentan como uno solo
+  const vistos=new Set(); cand=cand.filter(x=>{ const k=normalizar(x.it.nombre); if(vistos.has(k)) return false; vistos.add(k); return true; });
+  if(cand.length>1) return {estado:"ambiguo", opciones:cand.slice(0,4).map(x=>x.it)};
+  return {estado:"ok", item:cand[0].it, puntaje:cand[0].p};
+}
+/* Interpreta una frase. Devuelve {accion, cantidad, item, tipo:'producto'|'insumo', unidad, ...} o {error} */
+function interpretar(frase, productos, insumos){
+  let t = normalizar(frase);
+  const m = t.match(PALABRA_CLAVE); if(m) t = t.slice(m.index+m[0].length).trim();
+  t = palabrasANumeros(t);
+  const accion = detectarAccion(t);
+  if(!accion) return {error:"No entendí si se fabricó, se vendió, llegó un insumo o es una consulta."};
+
+  const tk = tokens(t);
+  // talle: número después de "talle"
+  let talle=null; const it = tk.indexOf("talle"); if(it>=0 && /^\d+$/.test(tk[it+1]||"")) talle=+tk[it+1];
+  const nums = tk.map((w,i)=>({w,i})).filter(x=>/^\d+$/.test(x.w));
+  // cantidad: primer número que no es el talle (en consultas no hay cantidad)
+  let cantidad=null, unidad=null, idxCant=-1;
+  if(accion!=="consulta"){
+    const c = nums.find(x=>!(talle!=null && tk[x.i-1]==="talle"));
+    if(!c) return {error:"No escuché la cantidad. Decila con número, por ejemplo: cincuenta."};
+    cantidad=+c.w; idxCant=c.i;
+    const sig = tk[c.i+1];
+    if(sig==="metro"||sig==="centimetro"||sig==="unidad") unidad=sig;
+  }
+  const palabras = tk.filter(w=>!/^\d+$/.test(w) && !CLAVES.has(w) && !Object.values(VERBOS).some(rx=>rx.test(w)));
+  const numeros = tk.filter((w,i)=>/^\d+$/.test(w) && i!==idxCant);
+  const dicho = {palabras, numeros, talle};
+
+  let tipo, r;
+  if(accion==="ingreso") { tipo="insumo"; r=elegir(dicho, insumos); }
+  else if(accion==="consulta"){
+    const rp=elegir(dicho, productos), ri=elegir(dicho, insumos);
+    if(rp.estado==="ok" && (ri.estado!=="ok" || rp.puntaje>=ri.puntaje)) { tipo="producto"; r=rp; }
+    else if(ri.estado==="ok") { tipo="insumo"; r=ri; }
+    else { r = rp.estado==="ambiguo" ? rp : ri; tipo = rp.estado==="ambiguo" ? "producto" : "insumo"; }
+  } else { tipo="producto"; r=elegir(dicho, productos); }
+
+  if(r.estado==="no") return {error: tipo==="insumo" ? "No encontré ese insumo en materias primas." : "No encontré ese producto en el stock.", accion};
+  const base = {accion, tipo, cantidad, unidad};
+  if(r.estado==="ambiguo") return {...base, ambiguo:r.opciones};
+  return {...base, item:r.item};
+}
+// PARSER-FIN ------------------------------------------------------------------
+
+/* ===================== Sesión y datos ===================== */
+const $ = s => document.querySelector(s);
+let sesion = null, PRODUCTOS = [], INSUMOS = [];
+const guardar = (k,v)=>{ try{ v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+const leer = k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
+
+async function auth(tipo, cuerpo){
+  const r = await fetch(SUPABASE_URL+"/auth/v1/token?grant_type="+tipo,{method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(cuerpo)});
+  const j = await r.json(); if(!r.ok) throw new Error(j.error_description||j.msg||"Error de acceso");
+  return {access:j.access_token, refresh:j.refresh_token, vence:Date.now()+(j.expires_in-60)*1000, email:j.user?.email||cuerpo.email};
+}
+async function token(){
+  if(!sesion) throw new Error("Sin sesión");
+  if(Date.now()>sesion.vence){ const n=await auth("refresh_token",{refresh_token:sesion.refresh}); sesion={...sesion,...n,email:sesion.email}; guardar("taira_taller",sesion); }
+  return sesion.access;
+}
+async function api(ruta, opciones={}){
+  const r = await fetch(SUPABASE_URL+ruta,{...opciones,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+await token(),"Content-Type":"application/json",...(opciones.headers||{})}});
+  const txt = await r.text(); const j = txt?JSON.parse(txt):null;
+  if(!r.ok) throw new Error((j&&(j.message||j.hint))||("Error "+r.status));
+  return j;
+}
+const rpc = (fn, args)=>api("/rest/v1/rpc/"+fn,{method:"POST",body:JSON.stringify(args)});
+const usuario = ()=>{ const e=(sesion?.email||"taller").split("@")[0]; return e.charAt(0).toUpperCase()+e.slice(1); };
+
+async function cargarDatos(){
+  [PRODUCTOS, INSUMOS] = await Promise.all([
+    api("/rest/v1/productos?select=id,nombre,cantidad,minimo&order=nombre"),
+    api("/rest/v1/materias_primas?select=id,nombre,categoria,tipo,cantidad,longitud,minimo&order=nombre"),
+  ]);
+}
+const esCinta = m => /^longitud/i.test(m.tipo||"") || /cinta/i.test(m.categoria||"");
+
+/* ===================== Voz ===================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null, escuchando=false, hablando=false, quiereEscuchar=false, esperando=null /* resolver de respuesta */;
+let modoComando=false, timerComando=null;
+
+function voz(){ const vs=speechSynthesis.getVoices(); return vs.find(v=>/es[-_]AR/i.test(v.lang))||vs.find(v=>/es[-_](US|MX|419)/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)); }
+function decir(texto){
+  return new Promise(res=>{
+    if(!("speechSynthesis" in window)) return res();
+    hablando=true; pararRec(); ponerMic("habla");
+    const u=new SpeechSynthesisUtterance(texto); u.lang="es-AR"; const v=voz(); if(v) u.voice=v; u.rate=1.02;
+    const fin=()=>{ hablando=false; res(); if(quiereEscuchar) arrancarRec(); };
+    u.onend=fin; u.onerror=fin; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    setTimeout(()=>{ if(hablando) fin(); }, 12000);
+  });
+}
+function ponerMic(c){ const m=$("#mic"); m.className="mic"+(c?" "+c:""); }
+function estado(t, ayuda){ $("#estado").textContent=t; if(ayuda!==undefined) $("#ayuda").innerHTML=ayuda; }
+
+function crearRec(){
+  rec=new SR(); rec.lang="es-AR"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+  rec.onresult=e=>{
+    let fin="", parcial="";
+    for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; (r.isFinal?(fin+=r[0].transcript):(parcial+=r[0].transcript)); }
+    $("#oido").textContent = (fin||parcial) ? "“"+(fin||parcial)+"”" : "";
+    if(fin) oir(fin.trim());
+  };
+  rec.onstart=()=>{ escuchando=true; ponerMic(modoComando||esperando?"atento":"escucha"); };
+  rec.onend=()=>{ escuchando=false; if(quiereEscuchar && !hablando) setTimeout(arrancarRec, 250); else if(!hablando) ponerMic(""); };
+  rec.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){ quiereEscuchar=false; estado("Sin permiso de micrófono","Permití el micrófono para esta página en Chrome (candado de la barra de direcciones)."); }
+  };
+}
+function arrancarRec(){ if(!rec||escuchando||hablando) return; try{ rec.start(); }catch(e){} }
+function pararRec(){ if(rec&&escuchando){ try{ rec.abort(); }catch(e){} } }
+
+/* Cada frase escuchada */
+async function oir(texto){
+  const t=normalizar(texto);
+  if(esperando){ // estamos esperando sí/no o una opción
+    const r=esperando; r(t); return;
+  }
+  const tieneClave=PALABRA_CLAVE.test(t);
+  if(!modoComando && !tieneClave) return;                        // ignora charla del taller
+  const resto=tieneClave ? t.slice(t.match(PALABRA_CLAVE).index+t.match(PALABRA_CLAVE)[0].length).trim() : t;
+  if(!resto){ modoComando=true; clearTimeout(timerComando); timerComando=setTimeout(()=>{modoComando=false; ponerMic("escucha"); estado("Escuchando…");},10000);
+    estado("Te escucho…"); await decir("Te escucho"); return; }
+  modoComando=false; clearTimeout(timerComando);
+  await procesar(resto);
+}
+
+function preguntar(texto, opciones){
+  return new Promise(async res=>{
+    $("#cTexto").textContent=texto; $("#confirma").classList.add("on");
+    $("#cBts").hidden=!!opciones; const box=$("#cOpc"); box.innerHTML="";
+    let listo=false, tm;
+    const fin=v=>{ if(listo) return; listo=true; clearTimeout(tm); esperando=null; $("#confirma").classList.remove("on"); res(v); };
+    if(opciones){
+      opciones.forEach((o,i)=>{ const b=document.createElement("button"); b.textContent=(i+1)+". "+o.nombre; b.onclick=()=>fin(o); box.appendChild(b); });
+      const b=document.createElement("button"); b.textContent="Cancelar"; b.onclick=()=>fin(null); box.appendChild(b);
+      esperando=t=>{ if(NO.test(t)) return fin(null);
+        const n=tokens(t).find(w=>/^\d+$/.test(w)); if(n && opciones[+n-1]) return fin(opciones[+n-1]);
+        const tt=tokens(t); const r=elegir({palabras:tt.filter(w=>!/^\d+$/.test(w)&&!CLAVES.has(w)),numeros:tt.filter(w=>/^\d+$/.test(w)),talle:null},opciones); if(r.estado==="ok") fin(r.item); };
+    } else {
+      $("#cSi").onclick=()=>fin(true); $("#cNo").onclick=()=>fin(false);
+      esperando=t=>{ if(NO.test(t)&&!SI.test(t)) fin(false); else if(SI.test(t)) fin(true); };
+    }
+    ponerMic("atento");
+    await decir(texto);
+    tm=setTimeout(()=>fin(opciones?null:false), TIEMPO_CONFIRMAR*1000);
+  });
+}
+
+const fmt = n => Number(n).toLocaleString("es-AR",{maximumFractionDigits:2});
+const enMetros = cm => fmt(Math.round(Number(cm))/100);
+function insumoTexto(mp, cant){ return esCinta(mp) ? `${enMetros(cant)} metros de ${mp.nombre}` : `${fmt(cant)} ${mp.nombre}`; }
+function stockInsumo(mp){ return esCinta(mp) ? Number(mp.longitud||0) : Number(mp.cantidad||0); }
+
+async function procesar(frase){
+  estado("Pensando…"); $("#oido").textContent="“"+frase+"”";
+  try{ await cargarDatos(); }catch(e){ return falla("No me pude conectar con la base. Revisá internet.", e); }
+  let r = interpretar(frase, PRODUCTOS, INSUMOS);
+  if(r.error){ registrar("err", frase, r.error); await decir(r.error); return listo(); }
+  if(r.ambiguo){
+    const elegido = await preguntar("¿Cuál? " + r.ambiguo.map((o,i)=>(i+1)+": "+o.nombre).join(". "), r.ambiguo);
+    if(!elegido){ await decir("Cancelado."); return listo(); }
+    r.item = elegido;
+  }
+  const it=r.item;
+
+  if(r.accion==="consulta"){
+    const msg = r.tipo==="producto" ? `Hay ${fmt(it.cantidad||0)} ${it.nombre}.` : `Quedan ${insumoTexto(it, stockInsumo(it))}.`;
+    registrar("ok", frase, msg); await decir(msg); return listo();
+  }
+
+  // cantidad para insumos: cinta en cm (si dijo metros o no dijo nada, son metros)
+  let cant=r.cantidad;
+  if(r.tipo==="insumo" && esCinta(it) && r.unidad!=="centimetro") cant=r.cantidad*100;
+  const textoAccion = {
+    produccion:`se fabricaron ${fmt(r.cantidad)} ${it.nombre}`,
+    venta:`se vendieron ${fmt(r.cantidad)} ${it.nombre}`,
+    ingreso:`ingresan ${insumoTexto(it, cant)}`,
+  }[r.accion];
+
+  const ok = await preguntar(`Entendí: ${textoAccion}. ¿Confirmo?`);
+  if(!ok){ registrar("av", frase, "Cancelado, no se cargó nada."); await decir("Cancelado, no cargué nada."); return listo(); }
+
+  try{
+    let msg;
+    if(r.accion==="produccion"){
+      const res = await rpc("registrar_produccion",{p_producto_id:it.id,p_unidades:r.cantidad,p_usuario:usuario(),p_origen:"Voz"});
+      msg = `Listo. Stock de ${res.producto}: ${fmt(res.stock)}.`;
+      const ins = (res.insumos||[]).filter(i=>i.material);
+      const bajos = ins.filter(i=>i.bajo);
+      if(ins.length===0) msg += " Ese producto no tiene receta, no descontó insumos.";
+      if(bajos.length) msg += " Atención, queda poco: " + bajos.map(i=>i.unidad==="cm"?`${i.material}, ${enMetros(i.queda)} metros`:`${i.material}, ${fmt(i.queda)}`).join("; ") + ".";
+      registrar(bajos.length?"av":"ok", frase, msg + (ins.length? " Insumos: "+ins.map(i=>i.unidad==="cm"?`-${enMetros(i.usado)} m ${i.material}`:`-${fmt(i.usado)} ${i.material}`).join(", "):""));
+    } else if(r.accion==="venta"){
+      const res = await rpc("registrar_venta",{p_producto_id:it.id,p_unidades:r.cantidad,p_usuario:usuario(),p_origen:"Voz"});
+      if(!res.ok){ msg=`No alcanza: hay ${fmt(res.stock)} ${res.producto}. No cargué la venta.`; registrar("err",frase,msg); await decir(msg); return listo(); }
+      msg = `Listo. Quedan ${fmt(res.stock)} ${res.producto}.`;
+      registrar("ok", frase, msg);
+    } else {
+      const res = await rpc("ingresar_insumo",{p_insumo_id:it.id,p_cantidad:cant,p_usuario:usuario(),p_origen:"Voz"});
+      msg = `Listo. Ahora hay ${res.unidad==="cm" ? enMetros(res.queda)+" metros" : fmt(res.queda)} de ${res.insumo}.`;
+      registrar("ok", frase, msg);
+    }
+    await decir(msg);
+  }catch(e){ return falla("No se pudo cargar: " + e.message, e); }
+  listo();
+}
+async function falla(msg, e){ console.error(e); registrar("err","",msg); await decir(msg); listo(); }
+function listo(){ $("#confirma").classList.remove("on"); estado(quiereEscuchar?"Escuchando… decí “Taira”":"Tocá el micrófono para hablar"); ponerMic(quiereEscuchar&&escuchando?"escucha":""); }
+
+function registrar(clase, frase, msg){
+  const li=document.createElement("li"); li.className=clase;
+  li.innerHTML=`<time>${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}${frase?" · “"+frase.replace(/[<>&]/g,"")+"”":""}</time>`;
+  li.appendChild(document.createTextNode(msg)); $("#log").prepend(li);
+}
+
+/* ===================== Pantalla ===================== */
+let wake=null;
+async function mantenerPantalla(){ try{ if("wakeLock" in navigator){ wake=await navigator.wakeLock.request("screen"); } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ mantenerPantalla(); if(quiereEscuchar) arrancarRec(); } });
+
+$("#mic").onclick = async ()=>{
+  if(!SR){ estado("Este navegador no reconoce voz","Usá Google Chrome en la tablet. Mientras tanto podés escribir la orden abajo."); return; }
+  if(!rec) crearRec();
+  mantenerPantalla();
+  if($("#siempre").checked){
+    quiereEscuchar=!quiereEscuchar;
+    if(quiereEscuchar){ arrancarRec(); estado("Escuchando… decí “Taira”"); }
+    else { pararRec(); ponerMic(""); estado("Escucha pausada","Tocá el micrófono para volver a escuchar."); }
+  } else { // modo tocar para hablar: la próxima frase es una orden
+    modoComando=true; quiereEscuchar=false; arrancarRec(); estado("Te escucho…");
+    clearTimeout(timerComando); timerComando=setTimeout(()=>{ modoComando=false; pararRec(); listo(); },10000);
+  }
+};
+$("#siempre").onchange=()=>{ if(!$("#siempre").checked){ quiereEscuchar=false; pararRec(); listo(); } };
+const enviarTexto=()=>{ const v=$("#txt").value.trim(); if(!v) return; $("#txt").value=""; if(esperando) esperando(normalizar(v)); else procesar(v.replace(PALABRA_CLAVE,"")); };
+$("#txtBtn").onclick=enviarTexto; $("#txt").onkeydown=e=>{ if(e.key==="Enter") enviarTexto(); };
+
+/* ===================== Login ===================== */
+async function entrar(){
+  $("#lErr").textContent="";
+  try{
+    sesion = await auth("password",{email:$("#lEmail").value.trim(),password:$("#lPass").value});
+    guardar("taira_taller", sesion); await iniciar();
+  }catch(e){ $("#lErr").textContent="Usuario o contraseña incorrectos."; }
+}
+$("#lBtn").onclick=entrar; $("#lPass").onkeydown=e=>{ if(e.key==="Enter") entrar(); };
+$("#salir").onclick=()=>{ guardar("taira_taller",null); location.reload(); };
+
+async function iniciar(){
+  try{ await cargarDatos(); }catch(e){ guardar("taira_taller",null); sesion=null; $("#vLogin").hidden=false; $("#vApp").hidden=true; $("#lErr").textContent="La sesión venció, ingresá de nuevo."; return; }
+  $("#vLogin").hidden=true; $("#vApp").hidden=false; $("#uNombre").textContent=usuario();
+  if(!SR) estado("Este navegador no reconoce voz","Abrí esta página en <b>Google Chrome</b>. Mientras tanto podés escribir la orden abajo.");
+  speechSynthesis?.getVoices();
+}
+sesion = leer("taira_taller");
+if(sesion) iniciar(); else $("#vLogin").hidden=false;
+</script>
+</body>
+</html>
