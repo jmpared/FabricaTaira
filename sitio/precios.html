@@ -210,10 +210,15 @@ details.lote .cuerpo{padding:0 10px 12px}
     <h2>Excel y PDF</h2>
     <div class="card" style="margin-bottom:12px;border:2px solid var(--rojo)">
       <h3 style="margin:0 0 4px;font-family:Fredoka;font-weight:600">📄 Catálogo PDF para clientes</h3>
-      <div class="sub">Fichas con foto, talles, medidas y precio, agrupadas por línea y categoría. Para mandar por WhatsApp o imprimir en A4. Usa los precios publicados y los filtros de la pestaña Precios (<span id="pdfFiltro"></span>).</div>
+      <div class="sub">Fichas con foto, talles, medidas y precio, con índice tocable por categoría y botón de WhatsApp. Usa los precios publicados y los filtros de la pestaña Precios (<span id="pdfFiltro"></span>).</div>
       <div class="grid2" style="margin-top:4px">
         <div><label class="l">Título</label><input class="in" id="pdfTitulo" value="Catálogo mayorista" style="width:100%"></div>
         <div><label class="l">Nota (opcional)</label><input class="in" id="pdfNota" placeholder="Ej: Lista especial revendedores" style="width:100%"></div>
+      </div>
+      <label class="l">Formato</label>
+      <div class="frow" style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn" style="flex:1 1 180px;text-align:center"><input type="radio" name="pdfFormato" value="celular" checked> 📱 Celular · para WhatsApp</label>
+        <label class="btn" style="flex:1 1 180px;text-align:center"><input type="radio" name="pdfFormato" value="a4"> 🖨️ A4 · para imprimir</label>
       </div>
       <div class="inl" style="margin-top:6px">
         <div><label class="l">Descuento en este PDF %</label><input class="in" id="pdfDesc" inputmode="decimal" value="0"></div>
@@ -742,9 +747,10 @@ async function catalogoPDF(compartir) {
     await new Promise(r => setTimeout(r, 30));
     const datos = ps.map(p => ({ nombre: p.nombre, categoria: p.categoria, linea: p.linea, ancho: p.ancho, largo: p.largo,
       precio: num(p.precio_publicado), promo: p.promo, foto_url: p.foto_url }));
-    const bytes = CatalogoPDF.armar(datos, { titulo: $("#pdfTitulo").value.trim() || "Catálogo mayorista", nota: $("#pdfNota").value.trim(),
+    const formato = (document.querySelector('input[name="pdfFormato"]:checked') || {}).value || "celular";
+    const bytes = CatalogoPDF.armar(datos, { formato, titulo: $("#pdfTitulo").value.trim() || "Catálogo mayorista", nota: $("#pdfNota").value.trim(),
       descuento: num($("#pdfDesc").value) || 0, promo: $("#pdfPromo").checked, medida: $("#pdfMed").checked, fotos, fecha: hoyTxt() });
-    const nombre = `Catalogo_TAIRA_${hoyArch()}.pdf`, blob = new Blob([bytes], { type: "application/pdf" });
+    const nombre = `Catalogo_TAIRA_${formato === "a4" ? "A4_" : ""}${hoyArch()}.pdf`, blob = new Blob([bytes], { type: "application/pdf" });
     PDF_LISTO = new File([blob], nombre, { type: "application/pdf" });
     const tam = bytes.length >= 1e6 ? (bytes.length / 1e6).toFixed(1).replace(".", ",") + " MB" : Math.round(bytes.length / 1e3) + " KB";
     est.textContent = `✅ Catálogo listo: ${ps.length} productos · ${tam}` + (faltan ? ` · ${faltan} fotos no se pudieron cargar (esas fichas salen sin foto)` : "");
