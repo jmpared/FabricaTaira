@@ -127,6 +127,21 @@ footer{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--blanco
 #carro .seguir{background:var(--crema2);color:var(--tinta)}
 #carro .mandar{background:var(--verde);color:#fff}
 #carro .vacio{text-align:center;color:var(--gris);padding:40px 10px}
+/* Datos del cliente (primer pedido) */
+#carro .items{min-height:90px}
+#carro .res{overflow-y:auto;flex:0 1 auto;-webkit-overflow-scrolling:touch}
+.preg{font-size:14px;font-weight:800;margin:10px 0 6px}
+.sino{display:flex;gap:8px}
+.sino button{flex:1;border:1.5px solid var(--linea);background:#fff;color:var(--tinta);border-radius:12px;padding:10px 8px;font-weight:800;font-size:14px}
+.sino button.on{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.datos{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;margin-top:4px}
+.datos .full{grid-column:1/-1}
+.datos label{margin:8px 0 3px!important}
+.datos label i{font-style:normal;font-weight:600;color:var(--gris)}
+#carro .datos input,#carro .datos select{width:100%;padding:10px 11px;border-radius:12px;border:1.5px solid var(--linea);background:#fff;font:inherit;font-size:16px;color:var(--tinta)}
+#carro .datos .mal,#carro input#cli.mal{border-color:var(--rojo)}
+.aviso{font-size:12px;color:var(--gris);margin:8px 0 0}
+#otraVez{background:none;border:0;color:var(--gris);font-size:12px;text-decoration:underline;padding:0;margin-top:6px}
 body.fijo{overflow:hidden}
 #vaciar{background:none;border:0;color:var(--gris);font-size:12px;text-decoration:underline;padding:0;margin-left:6px}
 </style>
@@ -180,8 +195,31 @@ body.fijo{overflow:hidden}
       <div class="fila ah" id="rAhF" hidden><span>🎁 Promo (unidades gratis)</span><span id="rAh"></span></div>
       <div class="fila tot2"><span>Total</span><span id="rTot"></span></div>
       <div class="envio" id="rEnv"></div>
-      <label for="cli">Nombre del comercio o cliente</label>
-      <input id="cli" autocomplete="organization" placeholder="Ej: Veterinaria San Roque">
+      <div id="pregPrimera">
+        <div class="preg">¿Es la primera vez que hacés un pedido a TAIRA?</div>
+        <div class="sino"><button type="button" id="esNuevo">Sí, es mi primer pedido</button><button type="button" id="esViejo">No, ya compré antes</button></div>
+      </div>
+      <div id="bloqViejo" hidden>
+        <label for="cli">Nombre del comercio o cliente</label>
+        <input id="cli" autocomplete="organization" placeholder="Ej: Veterinaria San Roque">
+        <button type="button" id="otraVez" hidden>Cambiar mis datos</button>
+      </div>
+      <div id="bloqNuevo" hidden>
+        <p class="aviso">Completá tus datos una sola vez: van con el pedido para preparar la factura y el envío.</p>
+        <div class="datos">
+          <div class="full"><label for="dCom">Nombre del comercio <i>(veterinaria / pet shop)</i></label><input id="dCom" autocomplete="organization" placeholder="Ej: Veterinaria San Roque"></div>
+          <div><label for="dNom">Nombre</label><input id="dNom" autocomplete="given-name"></div>
+          <div><label for="dApe">Apellido</label><input id="dApe" autocomplete="family-name"></div>
+          <div><label for="dCuit">CUIT / CUIL</label><input id="dCuit" inputmode="numeric" placeholder="20-12345678-9"></div>
+          <div><label for="dIva">Condición IVA</label><select id="dIva"><option value="">Elegir…</option><option>Responsable Inscripto</option><option>Monotributista</option><option>Exento</option><option>Consumidor Final</option></select></div>
+          <div><label for="dTel">Teléfono / WhatsApp</label><input id="dTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="3751 123456"></div>
+          <div><label for="dMail">Correo electrónico</label><input id="dMail" type="email" inputmode="email" autocomplete="email" placeholder="nombre@correo.com"></div>
+          <div class="full"><label for="dDir">Dirección <i>(calle, número, piso/depto)</i></label><input id="dDir" autocomplete="street-address"></div>
+          <div><label for="dCiu">Ciudad / Localidad</label><input id="dCiu" autocomplete="address-level2"></div>
+          <div><label for="dCp">Código postal</label><input id="dCp" inputmode="numeric" autocomplete="postal-code" placeholder="3352"></div>
+          <div class="full"><label for="dProv">Provincia</label><select id="dProv" autocomplete="address-level1"><option value="">Elegir…</option></select></div>
+        </div>
+      </div>
       <div class="bts"><button class="seguir" id="seguir">← Seguir comprando</button><button class="mandar" id="env">Enviar por WhatsApp 💬</button></div>
     </div>
   </div>
@@ -371,6 +409,7 @@ function pintarCarro(){
 function abrirCarro(){
   pintarCarro(); $("#carro").hidden = false; document.body.classList.add("fijo");
   try { $("#cli").value = $("#cli").value || localStorage.getItem("taira_cliente") || ""; } catch(e) {}
+  prepararCliente();
   try { history.pushState({carro: 1}, ""); } catch(e) {}
 }
 function cerrarCarro(desdeAtras){
@@ -388,12 +427,80 @@ $("#carro").addEventListener("click", e => {
 window.addEventListener("popstate", () => cerrarCarro(true));
 document.addEventListener("keydown", e => { if(e.key === "Escape") cerrarCarro(); });
 
+/* ============ Datos del cliente: primer pedido o cliente conocido ============ */
+const PROVINCIAS = ["Misiones","Buenos Aires","Ciudad Autónoma de Buenos Aires","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Neuquén","Río Negro","Salta","San Juan","San Luis","Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán"];
+$("#dProv").innerHTML += PROVINCIAS.map(p => '<option>' + p + '</option>').join("");
+const CAMPOS = { dCom: "Comercio", dNom: "Nombre", dApe: "Apellido", dCuit: "CUIT/CUIL", dIva: "Condición IVA", dTel: "Teléfono", dMail: "Correo", dDir: "Dirección", dCiu: "Ciudad", dCp: "CP", dProv: "Provincia" };
+let modo = "";   // "nuevo" | "viejo"
+function leerDatos(){ try { return JSON.parse(localStorage.getItem("taira_datos") || "null"); } catch(e) { return null; } }
+function elegir(m){
+  modo = m;
+  $("#esNuevo").classList.toggle("on", m === "nuevo");
+  $("#esViejo").classList.toggle("on", m === "viejo");
+  $("#bloqNuevo").hidden = m !== "nuevo";
+  $("#bloqViejo").hidden = m !== "viejo";
+}
+function prepararCliente(){
+  const d = leerDatos();
+  if(d){                         // ya mandó un pedido desde este celular: no preguntamos de nuevo
+    Object.keys(CAMPOS).forEach(k => { if(d[k] != null) $("#" + k).value = d[k]; });
+    if(!$("#cli").value) $("#cli").value = d.dCom || (d.dNom + " " + d.dApe).trim();
+    $("#pregPrimera").hidden = true; $("#otraVez").hidden = false; elegir("viejo");
+  } else if(!modo){
+    $("#pregPrimera").hidden = false; $("#bloqNuevo").hidden = $("#bloqViejo").hidden = true;
+  }
+}
+$("#esNuevo").onclick = () => { elegir("nuevo"); setTimeout(() => $("#dCom").focus(), 50); };
+$("#esViejo").onclick = () => { elegir("viejo"); setTimeout(() => $("#cli").focus(), 50); };
+$("#otraVez").onclick = () => { $("#pregPrimera").hidden = false; elegir("nuevo"); };
+$("#dProv").onchange = () => {   // la provincia define la zona de envío
+  const p = $("#dProv").value; if(!p) return;
+  $("#zona").value = p === "Misiones" ? "mis" : "arg";
+  try { localStorage.setItem("taira_zona", $("#zona").value); } catch(e) {}
+  calc(); pintarCarro();
+};
+document.addEventListener("input", e => { if(e.target.classList && e.target.classList.contains("mal")) e.target.classList.remove("mal"); });
+
+function validarNuevo(){
+  const v = k => $("#" + k).value.trim();
+  const errores = [];
+  const marcar = (k, msg) => { $("#" + k).classList.add("mal"); errores.push(msg); };
+  ["dNom","dApe","dTel","dDir","dCiu","dProv"].forEach(k => { if(!v(k)) marcar(k, CAMPOS[k]); });
+  const cuit = v("dCuit").replace(/\D/g, "");
+  if(cuit.length !== 11) marcar("dCuit", "CUIT/CUIL (11 números)");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v("dMail"))) marcar("dMail", "Correo válido");
+  if(!/^(\d{4}|[A-Za-z]\d{4}[A-Za-z]{3})$/.test(v("dCp").replace(/\s/g, ""))) marcar("dCp", "Código postal (4 números)");
+  if(errores.length){
+    const primero = document.querySelector("#bloqNuevo .mal"); if(primero) primero.focus();
+    alert("Revisá estos datos:\n• " + errores.join("\n• "));
+    return null;
+  }
+  const d = {}; Object.keys(CAMPOS).forEach(k => d[k] = v(k));
+  d.dCuit = cuit.slice(0,2) + "-" + cuit.slice(2,10) + "-" + cuit.slice(10);
+  d.dCp = d.dCp.toUpperCase();
+  return d;
+}
+
 $("#env").onclick = () => {
   const ids = idsPedido();
   if(!ids.length) return alert("Todavía no agregaste productos.");
-  const nom = $("#cli").value.trim();
-  if(!nom){ $("#cli").focus(); $("#cli").style.borderColor = "var(--rojo)"; return alert("Escribí el nombre del comercio o cliente."); }
-  $("#cli").style.borderColor = "";
+  if(!modo){ $("#pregPrimera").scrollIntoView({block: "center"}); return alert("Contanos si es tu primer pedido a TAIRA."); }
+  let nom, bloqueDatos = "";
+  if(modo === "nuevo"){
+    const d = validarNuevo(); if(!d) return;
+    nom = d.dCom || (d.dNom + " " + d.dApe);
+    bloqueDatos = "\n\n*CLIENTE NUEVO — datos*" +
+      (d.dCom ? "\nComercio: " + d.dCom : "") +
+      "\nNombre: " + d.dNom + " " + d.dApe +
+      "\nCUIT/CUIL: " + d.dCuit + (d.dIva ? " (" + d.dIva + ")" : "") +
+      "\nTeléfono: " + d.dTel + "\nCorreo: " + d.dMail +
+      "\nDirección: " + d.dDir + "\n" + d.dCiu + " (CP " + d.dCp + "), " + d.dProv;
+    try { localStorage.setItem("taira_datos", JSON.stringify(d)); } catch(e) {}
+  } else {
+    nom = $("#cli").value.trim();
+    if(!nom){ $("#cli").focus(); $("#cli").classList.add("mal"); return alert("Escribí el nombre del comercio o cliente."); }
+  }
+  $("#cli").classList.remove("mal");
   try { localStorage.setItem("taira_cliente", nom); } catch(e) {}
   const L = ids.map(id => {
     const p = PROD[id], n = q[id], g = gratis(p, n);
@@ -401,7 +508,7 @@ $("#env").onclick = () => {
     return "• " + n + " x " + p.nombre + det + (g ? " — " + g + " gratis" : "") + " = " + plata2((n - g) * Number(p.precio));
   });
   const t = calc(), lim = $("#zona").value === "mis" ? ENVIO_MISIONES : ENVIO_PAIS;
-  const txt = "*PEDIDO TAIRA*\nCliente: " + nom + "\nEnvío: " + $("#zona").selectedOptions[0].text +
+  const txt = "*PEDIDO TAIRA*\nCliente: " + nom + "\nEnvío: " + $("#zona").selectedOptions[0].text + bloqueDatos +
               "\n\n" + L.join("\n") + "\n\n*TOTAL: " + plata2(t) + "*" + (t >= lim ? "\n🚚 Envío gratis" : "");
   window.open("https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(txt), "_blank");
 };
