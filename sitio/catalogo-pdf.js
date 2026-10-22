@@ -112,7 +112,7 @@ class Doc {
     });
     linksPorPag.flat().forEach(l => {
       const accion = l.dest.uri ? `/A << /S /URI /URI ${lit(l.dest.uri)} >>`
-        : `/Dest [${pagObj(Math.min(l.dest.pagina, this.paginas.length - 1))} 0 R /XYZ 0 ${n2((PH - (l.dest.y || 0)) * MM)} null]`;
+        : `/A << /S /GoTo /D [${pagObj(Math.min(l.dest.pagina, this.paginas.length - 1))} 0 R /FitH ${n2((PH - (l.dest.y || 0)) * MM)}] >>`;
       obj(l.n, `<< /Type /Annot /Subtype /Link /Rect [${l.rect.map(n2).join(" ")}] /Border [0 0 0] ${accion} >>`);
     });
     const info = nLink; obj(info, `<< /Title ${lit(titulo)} /Author ${lit("TAIRA Fábrica y Distribuidora")} /Producer (TAIRA) >>`);
