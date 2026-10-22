@@ -89,6 +89,45 @@ footer{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--blanco
 #zoom figure{margin:0;background:#fff;border-radius:18px;padding:12px;width:min(92vw,520px);text-align:center}
 #zoom img{width:100%;height:auto;border-radius:12px}
 #zoom figcaption{font-weight:800;margin-top:8px;font-size:15px}
+/* Carrito */
+#verPed{background:var(--verde);color:#fff;border:0;padding:13px 16px;border-radius:14px;font-size:15px;font-weight:800;white-space:nowrap;position:relative}
+#verPed .cn{display:inline-block;min-width:22px;background:#fff;color:var(--verde);border-radius:99px;padding:1px 6px;margin-left:6px;font-size:13px}
+#verPed:disabled{background:#cfc3b0}
+#carro{position:fixed;inset:0;z-index:40;background:rgba(30,15,5,.55);display:flex;align-items:flex-end;justify-content:center}
+#carro[hidden]{display:none}
+#carro .hoja{background:var(--crema);width:100%;max-width:640px;max-height:92vh;max-height:92dvh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 30px rgba(0,0,0,.25);animation:sube .22s ease-out}
+@keyframes sube{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media(min-width:700px){#carro{align-items:center}#carro .hoja{border-radius:22px;max-height:88vh}}
+#carro .cab{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px;border-bottom:1px solid var(--linea)}
+#carro .cab h2{margin:0;font-family:"Fredoka",sans-serif;font-weight:600;font-size:22px;color:var(--rojo)}
+#carro .x{background:var(--crema2);border:0;border-radius:12px;width:38px;height:38px;font-size:20px;font-weight:800;color:var(--tinta)}
+#carro .items{overflow-y:auto;padding:10px 12px;flex:1 1 auto;-webkit-overflow-scrolling:touch}
+.ci{background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:9px;display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.ci .fo{flex:0 0 56px;height:56px;border-radius:10px;background:var(--crema2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:"Fredoka",sans-serif;font-size:22px;color:var(--rojo)}
+.ci .fo img{width:100%;height:100%;object-fit:cover}
+.ci .tx{flex:1;min-width:0}
+.ci .nm{font-weight:800;font-size:14px;line-height:1.2}
+.ci .md{font-size:12px;color:var(--gris)}
+.ci .pu{font-size:12px;color:var(--gris);margin-top:2px}
+.ci .gr{font-size:12px;font-weight:800;color:var(--rojo)}
+.ci .der{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+.ci .st{font-weight:800;font-size:15px}
+.ci .q button{width:30px;height:30px;font-size:18px}
+.ci .q span{min-width:30px;text-align:center;font-weight:800}
+.ci .bo{background:none;border:0;color:var(--gris);font-size:12px;text-decoration:underline;padding:0}
+#carro .res{border-top:1px solid var(--linea);padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:var(--blanco);border-radius:0 0 22px 22px}
+#carro .fila{display:flex;justify-content:space-between;font-size:14px;margin:2px 0}
+#carro .fila.ah{color:var(--verde);font-weight:800}
+#carro .fila.tot2{font-size:20px;font-family:"Fredoka",sans-serif;font-weight:600;margin-top:6px}
+#carro .envio{font-size:13px;font-weight:700;margin:6px 0 10px}
+#carro label{font-size:13px;font-weight:800;display:block;margin:8px 0 4px}
+#carro input#cli{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--linea);background:#fff;font:inherit;font-size:15px}
+#carro .bts{display:flex;gap:8px;margin-top:12px}
+#carro .bts button{flex:1;border:0;border-radius:14px;padding:13px 10px;font-weight:800;font-size:15px}
+#carro .seguir{background:var(--crema2);color:var(--tinta)}
+#carro .mandar{background:var(--verde);color:#fff}
+#carro .vacio{text-align:center;color:var(--gris);padding:40px 10px}
+body.fijo{overflow:hidden}
 #vaciar{background:none;border:0;color:var(--gris);font-size:12px;text-decoration:underline;padding:0;margin-left:6px}
 </style>
 </head>
@@ -127,10 +166,26 @@ footer{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--blanco
         <div>Total: <b id="tt">$0</b></div>
         <div class="un"><span id="un">0 unidades</span><button id="vaciar" hidden>vaciar</button></div>
       </div>
-      <button id="env">Enviar pedido 💬</button>
+      <button id="verPed">🛒 Ver mi pedido<span class="cn" id="cn">0</span></button>
     </div>
   </div>
 </footer>
+
+<div id="carro" hidden role="dialog" aria-modal="true" aria-labelledby="carroT">
+  <div class="hoja">
+    <div class="cab"><h2 id="carroT">🛒 Mi pedido</h2><button class="x" id="carroX" aria-label="Cerrar">✕</button></div>
+    <div class="items" id="carroItems"></div>
+    <div class="res" id="carroRes">
+      <div class="fila"><span id="rUn"></span><span id="rSub"></span></div>
+      <div class="fila ah" id="rAhF" hidden><span>🎁 Promo (unidades gratis)</span><span id="rAh"></span></div>
+      <div class="fila tot2"><span>Total</span><span id="rTot"></span></div>
+      <div class="envio" id="rEnv"></div>
+      <label for="cli">Nombre del comercio o cliente</label>
+      <input id="cli" autocomplete="organization" placeholder="Ej: Veterinaria San Roque">
+      <div class="bts"><button class="seguir" id="seguir">← Seguir comprando</button><button class="mandar" id="env">Enviar por WhatsApp 💬</button></div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ================= CONFIGURACIÓN (editar acá) ================= */
@@ -231,6 +286,7 @@ function poner(id, v){
   const inp = document.querySelector('input[data-id="' + id + '"]');
   if(inp && document.activeElement !== inp) inp.value = v;
   guardar(); calc();
+  if(!$("#carro").hidden) pintarCarro();
 }
 
 function calc(){
@@ -251,6 +307,7 @@ function calc(){
   $("#tt").textContent = plata2(t);
   $("#un").textContent = u + (u === 1 ? " unidad" : " unidades") + (ah ? " · ahorrás " + plata(ah) : "");
   $("#vaciar").hidden = !u;
+  $("#cn").textContent = Object.keys(q).filter(id => q[id] && PROD[id]).length;
   const lim = $("#zona").value === "mis" ? ENVIO_MISIONES : ENVIO_PAIS;
   const pb = $("#pb"); pb.style.width = Math.min(100, t / lim * 100) + "%"; pb.classList.toggle("ok", t >= lim);
   $("#msg").innerHTML = !u ? "Elegí productos para armar tu pedido"
@@ -279,18 +336,72 @@ $("#bus").oninput = e => {
 };
 $("#vaciar").onclick = () => { if(confirm("¿Vaciar el pedido?")){ q = {}; guardar(); document.querySelectorAll("input[data-id]").forEach(i => i.value = 0); calc(); } };
 
+/* ============ Carrito: ver y revisar el pedido antes de enviarlo ============ */
+function idsPedido(){ return Object.keys(q).filter(id => q[id] && PROD[id]).sort((a,b) => PROD[a].orden - PROD[b].orden); }
+function pintarCarro(){
+  const ids = idsPedido();
+  if(!ids.length){
+    $("#carroItems").innerHTML = '<div class="vacio">Tu pedido está vacío.<br>Tocá <b>+</b> en los productos para agregarlos.</div>';
+    $("#carroRes").hidden = true; return;
+  }
+  $("#carroRes").hidden = false;
+  let sub = 0, ah = 0, u = 0;
+  $("#carroItems").innerHTML = ids.map(id => {
+    const p = PROD[id], n = q[id], g = gratis(p, n), pr = Number(p.precio);
+    sub += n * pr; ah += g * pr; u += n;
+    const ini = esc(p.nombre.trim().charAt(0).toUpperCase());
+    const foto = p.foto_url ? '<img src="' + esc(p.foto_url) + '" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode(\'' + ini + '\'))">' : ini;
+    return '<div class="ci"><div class="fo">' + foto + '</div>' +
+      '<div class="tx"><div class="nm">' + esc(p.nombre) + '</div>' +
+      (medidas(p) ? '<div class="md">' + esc(medidas(p)) + '</div>' : '') +
+      '<div class="pu">' + plata2(pr) + ' c/u</div>' +
+      (g ? '<div class="gr">🎁 ' + g + ' gratis por promo</div>' : '') + '</div>' +
+      '<div class="der"><div class="st">' + plata2((n - g) * pr) + '</div>' +
+      '<div class="q"><button class="m" data-d="-1" data-id="' + id + '" aria-label="Quitar uno">−</button><span>' + n + '</span><button data-d="1" data-id="' + id + '" aria-label="Agregar uno">+</button></div>' +
+      '<button class="bo" data-quitar="' + id + '">Quitar</button></div></div>';
+  }).join("");
+  const t = sub - ah, lim = $("#zona").value === "mis" ? ENVIO_MISIONES : ENVIO_PAIS;
+  $("#rUn").textContent = ids.length + (ids.length === 1 ? " producto · " : " productos · ") + u + (u === 1 ? " unidad" : " unidades");
+  $("#rSub").textContent = plata2(sub);
+  $("#rAhF").hidden = !ah; $("#rAh").textContent = "−" + plata2(ah);
+  $("#rTot").textContent = plata2(t);
+  $("#rEnv").innerHTML = "Envío: " + esc($("#zona").selectedOptions[0].text) + " · " +
+    (t >= lim ? '<span style="color:var(--verde)">🚚 ¡Tenés envío gratis!</span>' : 'te faltan <b>' + plata(lim - t) + '</b> para el envío gratis');
+}
+function abrirCarro(){
+  pintarCarro(); $("#carro").hidden = false; document.body.classList.add("fijo");
+  try { $("#cli").value = $("#cli").value || localStorage.getItem("taira_cliente") || ""; } catch(e) {}
+  try { history.pushState({carro: 1}, ""); } catch(e) {}
+}
+function cerrarCarro(desdeAtras){
+  if($("#carro").hidden) return;
+  $("#carro").hidden = true; document.body.classList.remove("fijo");
+  if(!desdeAtras && history.state && history.state.carro) history.back();
+}
+$("#verPed").onclick = abrirCarro;
+$("#carroX").onclick = () => cerrarCarro();
+$("#seguir").onclick = () => cerrarCarro();
+$("#carro").addEventListener("click", e => {
+  if(e.target.id === "carro") return cerrarCarro();
+  const b = e.target.closest("[data-quitar]"); if(b) poner(b.dataset.quitar, 0);
+});
+window.addEventListener("popstate", () => cerrarCarro(true));
+document.addEventListener("keydown", e => { if(e.key === "Escape") cerrarCarro(); });
+
 $("#env").onclick = () => {
-  const ids = Object.keys(q).filter(id => q[id] && PROD[id]).sort((a,b) => PROD[a].orden - PROD[b].orden);
+  const ids = idsPedido();
   if(!ids.length) return alert("Todavía no agregaste productos.");
-  const nom = prompt("Nombre del comercio o cliente:");
-  if(nom === null) return;
+  const nom = $("#cli").value.trim();
+  if(!nom){ $("#cli").focus(); $("#cli").style.borderColor = "var(--rojo)"; return alert("Escribí el nombre del comercio o cliente."); }
+  $("#cli").style.borderColor = "";
+  try { localStorage.setItem("taira_cliente", nom); } catch(e) {}
   const L = ids.map(id => {
     const p = PROD[id], n = q[id], g = gratis(p, n);
     const det = repetidos.has(p.nombre.toLowerCase()) && medidas(p) ? " (" + medidas(p) + ")" : "";
     return "• " + n + " x " + p.nombre + det + (g ? " — " + g + " gratis" : "") + " = " + plata2((n - g) * Number(p.precio));
   });
   const t = calc(), lim = $("#zona").value === "mis" ? ENVIO_MISIONES : ENVIO_PAIS;
-  const txt = "*PEDIDO TAIRA*\nCliente: " + nom.trim() + "\nEnvío: " + $("#zona").selectedOptions[0].text +
+  const txt = "*PEDIDO TAIRA*\nCliente: " + nom + "\nEnvío: " + $("#zona").selectedOptions[0].text +
               "\n\n" + L.join("\n") + "\n\n*TOTAL: " + plata2(t) + "*" + (t >= lim ? "\n🚚 Envío gratis" : "");
   window.open("https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(txt), "_blank");
 };
